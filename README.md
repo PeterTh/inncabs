@@ -6,6 +6,21 @@ Abstract
 --------
 INNCABS is a cross-platform cross-library benchmark suite consisting of 14 benchmarks with varying task granularities and synchronization requirements. It is designed to test the quality of implementation of C++11 parallelism constructs, in particular of std::async() and the deadlock-free multi-mutex std::lock() call.
 
+Folder Structure
+----------------
+- **bin/** : serves as the storage location for binary files, and contains benchmark input data.
+- **build/** : stores build files, particularly for the Windows platform
+- **include/** : contains the main INNCABS header file
+- **results/** : stores previously obtained result data (platform and benchmark details described in the paper)
+
+All other top-level folders contain a benchmark code each.
+
+Usage
+-----
+3 script files are included to simplify usage:
+- **build.rb** : builds all or a subset of the benchmarks. (Need to adapt compiler settings in the script)
+- **run.rb** : execute benchmarks across a set of core counts and settings
+- **eval.rb** : evaluates results obtained from run.rb, and stores them in a .csv file
 
 Applications
 ------------
