@@ -40,7 +40,7 @@ This benchmark implements a 2D packing problem. For a number of cells described 
 * **Health**:
 Simulates a health care system, based on a number of villages, hospitals, and patients. Details are described by Duran et al. In this benchmark, asynchronous calls are generated in a loop-like fashion, and after each step global synchronization is performed. Task granularity is variable, and moderate on average.
 
-* **Intersim**
+* **Intersim**:
 Executes a network of interaction combinators, as specified by Lafont. Interaction combinators are a simple, universal model for distributed computation, implemented in this benchmark as a sea of asynchronous co-dependent tasks. The evaluation of each combinator is asynchronous, and requires two to six shared mutexes, which are acquired using the variadic std::lock function call. Each evaluation may also spawn new asynchronous function calls. The task granularity is fine, and the test is a good benchmark for both task management and multiple lock acquisition overhead.
 
 * **NQueens**:
