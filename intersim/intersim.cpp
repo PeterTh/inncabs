@@ -1,3 +1,8 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
 #include <fstream>
@@ -33,12 +38,12 @@ class Cell {
 	Symbol symbol;
 	unsigned numPorts;
 	Port ports[MAX_PORTS];
-	std::mutex lock;
+	inncabs::mutex lock;
 	bool alive;
 
 public:
-	Cell(Symbol symbol, unsigned numPorts) 
-		: symbol(symbol), numPorts(numPorts), alive(true) { 
+	Cell(Symbol symbol, unsigned numPorts)
+		: symbol(symbol), numPorts(numPorts), alive(true) {
 		assert(numPorts > 0 && numPorts <= MAX_PORTS);
 		for(unsigned i=0; i<numPorts; i++) {
 			ports[i] = Port();
@@ -64,7 +69,7 @@ public:
 	}
 
 	void setPrinciplePort(const Port& wire) {
-		setPort(0, wire);	
+		setPort(0, wire);
 	}
 
 	const Port& getPort(unsigned index) const {
@@ -77,7 +82,7 @@ public:
 		ports[index] = wire;
 	}
 
-	std::mutex& getLock() {
+	inncabs::mutex& getLock() {
 		return lock;
 	}
 };
@@ -231,7 +236,7 @@ void plotGraph(Cell* cell, const string& filename) {
 			const Cell* other = cur->getPort(i).cell;
 
 			if (other) {
-				file << "\tn" << (cur) << " -> n" << (other) 
+				file << "\tn" << (cur) << " -> n" << (other)
 					<< " [label=\"\"" << ((i==0)?", color=\"blue\"":"") << "];\n";
 			}
 		}
@@ -273,7 +278,7 @@ namespace {
 }
 
 
-void handleCell(const std::launch l, Cell* a) {
+void handleCell(const inncabs::launch l, Cell* a) {
 	Cell * b = a->getPrinciplePort().cell;
 	std::lock(a->getLock(), b->getLock());
 
@@ -294,24 +299,24 @@ void handleCell(const std::launch l, Cell* a) {
 	Cell *z = b->getNumPorts()>1 ? b->getPort(1).cell : nullptr;
 	Cell *w = b->getNumPorts()>2 ? b->getPort(2).cell : nullptr;
 
-	std::mutex xLT, yLT, zLT, wLT;
-	std::mutex* aLock = &a->getLock();
-	std::mutex* bLock = &b->getLock();
-	std::mutex* xLock = x ? &x->getLock() : &xLT;
-	std::mutex* yLock = y ? &y->getLock() : &yLT;
-	std::mutex* zLock = z ? &z->getLock() : &zLT;
-	std::mutex* wLock = w ? &w->getLock() : &wLT;
-	
+	inncabs::mutex xLT, yLT, zLT, wLT;
+	inncabs::mutex* aLock = &a->getLock();
+	inncabs::mutex* bLock = &b->getLock();
+	inncabs::mutex* xLock = x ? &x->getLock() : &xLT;
+	inncabs::mutex* yLock = y ? &y->getLock() : &yLT;
+	inncabs::mutex* zLock = z ? &z->getLock() : &zLT;
+	inncabs::mutex* wLock = w ? &w->getLock() : &wLT;
+
 	unlockAll(*aLock, *bLock);
 	std::lock(*aLock, *bLock, *xLock, *yLock, *zLock, *wLock);
 
-	if(    a->getPrinciplePort().cell != b 
-		|| a->dead() || b->dead() 
+	if(    a->getPrinciplePort().cell != b
+		|| a->dead() || b->dead()
 		|| (x && x->dead()) || (y && y->dead()) || (z && z->dead()) || (w && w->dead())
 		|| x != (a->getNumPorts()>1 ? a->getPort(1).cell : nullptr)
 		|| y != (a->getNumPorts()>2 ? a->getPort(2).cell : nullptr)
 		|| z != (b->getNumPorts()>1 ? b->getPort(1).cell : nullptr)
-		|| w != (b->getNumPorts()>2 ? b->getPort(2).cell : nullptr) 
+		|| w != (b->getNumPorts()>2 ? b->getPort(2).cell : nullptr)
 		|| aSym != a->getSymbol()
 		|| bSym != b->getSymbol()) {
 		// need to retry later
@@ -320,8 +325,8 @@ void handleCell(const std::launch l, Cell* a) {
 		return;
 	}
 
-	/*std::cout << "fully locked on " << a << ", " << b << std::endl;*/ 
-	
+	/*std::cout << "fully locked on " << a << ", " << b << std::endl;*/
+
 	/*
 		// debugging:
 		stringstream file;
@@ -359,7 +364,7 @@ void handleCell(const std::launch l, Cell* a) {
 				// alter wiring
 				link(a, 0, x);
 				link(e, 0, y);
-				
+
 				// eliminate nodes
 				b->die();
 
@@ -373,7 +378,7 @@ void handleCell(const std::launch l, Cell* a) {
 				// implement the 0+ rule
 				auto x = b->getPort(1);
 				auto y = b->getPort(2);
-				
+
 				// creat new cell
 				auto n = new Zero();
 
@@ -400,7 +405,7 @@ void handleCell(const std::launch l, Cell* a) {
 				// implement the s+ rule
 				auto x = a->getPort(1);
 				auto y = b->getPort(1);
-				
+
 				// alter wiring
 				link(x, b, 0);
 				link(y, a, 0);
@@ -412,12 +417,12 @@ void handleCell(const std::launch l, Cell* a) {
 
 				break;
 			}
-			case '*': {	
+			case '*': {
 				// implement s* rule
 				auto x = a->getPort(1);
 				auto y = b->getPort(1);
 				auto z = b->getPort(2);
-				
+
 				// create new cells
 				auto p = new Add();
 				auto d = new Duplicator();
@@ -431,11 +436,11 @@ void handleCell(const std::launch l, Cell* a) {
 				link(p, 2, d, 2);
 
 				link(d, 0, z);
-				
+
 				// eliminate nodes
 				a->die();
 
-				// check for new 
+				// check for new
 				if(isCut(x, b)) newTasks.push_back(x);
 				if(isCut(d, z)) newTasks.push_back(d);
 
@@ -446,7 +451,7 @@ void handleCell(const std::launch l, Cell* a) {
 				auto x = a->getPort(1);
 				auto y = b->getPort(1);
 				auto z = b->getPort(2);
-				
+
 				// crate new cells
 				auto s = new Succ();
 
@@ -468,7 +473,7 @@ void handleCell(const std::launch l, Cell* a) {
 			case 'e': {
 				// implement the sd rule
 				auto x = a->getPort(1);
-				
+
 				// alter wiring
 				link(b, 0, x);
 
@@ -491,7 +496,7 @@ void handleCell(const std::launch l, Cell* a) {
 				// implement the 0+ rule
 				auto x = a->getPort(1);
 				auto y = a->getPort(2);
-				
+
 				// creat new cell
 				auto n = new Zero();
 
@@ -529,21 +534,21 @@ void handleCell(const std::launch l, Cell* a) {
 
 	/*std::cout << "pre-unlocked on " << a << ", " << b << " locks: " <<  *(int*)&a->getLock() << " / " <<  *(int*)&b->getLock() << std::endl;*/
 	unlockAll(*aLock, *bLock, *xLock, *yLock, *zLock, *wLock);
-	/*std::cout << "unlocked on " << a << ", " << b << " locks: " <<  *(int*)&a->getLock() << " / " <<  *(int*)&b->getLock() << std::endl;*/  
+	/*std::cout << "unlocked on " << a << ", " << b << " locks: " <<  *(int*)&a->getLock() << " / " <<  *(int*)&b->getLock() << std::endl;*/
 
-	std::vector<std::future<void>> futures;
+	std::vector<inncabs::future<void>> futures;
 	for(Cell* c : newTasks) futures.push_back(inncabs::async(l, &handleCell, l, c));
 	for(auto& f : futures) f.wait();
 }
 
 
-void compute(const std::launch l, Cell* net) {
+void compute(const inncabs::launch l, Cell* net) {
 
 	// step 1: get all cells in the net
 	set<const Cell*> cells = getClosure(net);
 
 	// step 2: get all connected principle ports
-	std::vector<std::future<void>> cuts;
+	std::vector<inncabs::future<void>> cuts;
 	for(const Cell* cur : cells) {
 		const Port& port = cur->getPrinciplePort();
 		if(cur < port.cell && isCut(cur, port.cell)) {
@@ -552,7 +557,7 @@ void compute(const std::launch l, Cell* net) {
 	}
 
 //std::cout << "Found " << cuts.size() << " cut(s).\n";
-	
+
 	// step 3: run processing
 	for(auto& f: cuts) {
 		f.wait();
@@ -575,7 +580,7 @@ int main(int argc, char** argv) {
 	ss << "Intersim (N = " << N << ")";
 	Cell* n;
 	inncabs::run_all(
-		[&](const std::launch l) {
+		[&](const inncabs::launch l) {
 			compute(l, n);
 			return n;
 		},

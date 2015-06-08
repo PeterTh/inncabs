@@ -57,6 +57,23 @@ namespace {
 }
 
 namespace inncabs {
+
+#if defined(INNCABS_USE_HPX)
+	using hpx::async;
+	using hpx::launch;
+	using hpx::future;
+	using hpx::thread;
+	namespace this_thread { using hpx::this_thread::sleep_for; }
+	using hpx::lcos::local::mutex;
+#else
+	using std::async;
+	using std::launch;
+	using std::future;
+	using std::thread;
+	namespace this_thread { using std::this_thread::sleep_for; }
+	using std::mutex;
+#endif
+
 	const static char* ENV_VAR_CSV = "INNCABS_CSV_OUTPUT";
 	const static char* ENV_VAR_MIN = "INNCABS_MIN_OUTPUT";
 	const static char* ENV_VAR_REPEATS = "INNCABS_REPEATS";
@@ -64,10 +81,10 @@ namespace inncabs {
 	const static char* ENV_VAR_TIMEOUT = "INNCABS_TIMEOUT";
 
 	using BenchResult = std::tuple<bool, long long>;
-	using LaunchConfiguration = std::tuple<std::launch, std::string>;
+	using LaunchConfiguration = std::tuple<inncabs::launch, std::string>;
 
 	template<typename Executor, typename Checker>
-	BenchResult benchmark(Executor x, Checker c, const std::launch l, const std::function<void()>& initializer) {
+	BenchResult benchmark(Executor x, Checker c, const inncabs::launch l, const std::function<void()>& initializer) {
 		initializer();
 		std::chrono::high_resolution_clock highc;
 		auto start = highc.now();
@@ -91,8 +108,8 @@ namespace inncabs {
 		// start timeout if requested
 		bool done = false;
 		if(timeout != std::chrono::milliseconds(0)) {
-			auto t = std::thread([&] {
-				std::this_thread::sleep_for(timeout);
+			auto t = inncabs::thread([&] {
+				inncabs::this_thread::sleep_for(timeout);
 				if(!done) exit(-1);
 			});
 			t.detach();
@@ -108,9 +125,9 @@ namespace inncabs {
 
 		// perform benchmarks
 		std::vector<LaunchConfiguration> configurations {
-			LaunchConfiguration { std::launch::deferred, "deferred" },
-			LaunchConfiguration { std::launch::deferred | std::launch::async, "optional" },
-			LaunchConfiguration { std::launch::async, "async" } };
+			LaunchConfiguration { inncabs::launch::deferred, "deferred" },
+			LaunchConfiguration { inncabs::launch::deferred | inncabs::launch::async, "optional" },
+			LaunchConfiguration { inncabs::launch::async, "async" } };
 
 		for(const auto& config : configurations) {
 			if(configSelection.find(std::get<1>(config)) != std::string::npos) {
@@ -165,11 +182,11 @@ namespace inncabs {
 	std::atomic<unsigned> g_par_count;
 
 	template < class Function, class... Args >
-	auto async(std::launch policy, Function&& f, Args&&... args) 
-		-> typename std::enable_if< std::is_void<decltype(f(args...))>::value, decltype(std::async(policy, f, args...))>::type {
-		if(policy != (std::launch::deferred | std::launch::async)) return std::async(policy, f, args...);
-		if(g_par_count.fetch_add(1) < std::thread::hardware_concurrency()) {
-			return std::async(std::launch::async, [&]() {
+	auto async(inncabs::launch policy, Function&& f, Args&&... args)
+		-> typename std::enable_if< std::is_void<decltype(f(args...))>::value, decltype(inncabs::async(policy, f, args...))>::type {
+		if(policy != (inncabs::launch::deferred | inncabs::launch::async)) return inncabs::async(policy, f, args...);
+		if(g_par_count.fetch_add(1) < inncabs::thread::hardware_concurrency()) {
+			return inncabs::async(inncabs::launch::async, [&]() {
 				f(args...);
 				g_par_count.fetch_sub(1);
 			});
@@ -177,15 +194,15 @@ namespace inncabs {
 		else {
 			g_par_count.fetch_sub(1);
 		}
-		return std::async(std::launch::deferred, f, args...);
+		return inncabs::async(inncabs::launch::deferred, f, args...);
 	}
 
 	template < class Function, class... Args >
-	auto async(std::launch policy, Function&& f, Args&&... args) 
-		-> typename std::enable_if< !std::is_void<decltype(f(args...))>::value, decltype(std::async(policy, f, args...))>::type {
-		if(policy != (std::launch::deferred | std::launch::async)) return std::async(policy, f, args...);
-		if(g_par_count.fetch_add(1) < std::thread::hardware_concurrency()) {
-			return std::async(std::launch::async, [&]() {
+	auto async(inncabs::launch policy, Function&& f, Args&&... args)
+		-> typename std::enable_if< !std::is_void<decltype(f(args...))>::value, decltype(inncabs::async(policy, f, args...))>::type {
+		if(policy != (inncabs::launch::deferred | inncabs::launch::async)) return inncabs::async(policy, f, args...);
+		if(g_par_count.fetch_add(1) < inncabs::thread::hardware_concurrency()) {
+			return inncabs::async(inncabs::launch::async, [&]() {
 				auto ret = f(args...);
 				g_par_count.fetch_sub(1);
 				return ret;
@@ -194,8 +211,7 @@ namespace inncabs {
 		else {
 			g_par_count.fetch_sub(1);
 		}
-		return std::async(std::launch::deferred, f, args...);
+		return inncabs::async(inncabs::launch::deferred, f, args...);
 	}
-	using std::async;
 	#endif
 }

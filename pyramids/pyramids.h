@@ -35,6 +35,9 @@
 // enables debugging messages
 #ifndef DEBUG
 	#define DEBUG 0
+#else
+    #undef DEBUG
+    #define DEBUG 1
 #endif
 
 typedef VALUE_TYPE real;
@@ -138,18 +141,18 @@ void jacobi_iterative(Grid* A, Grid* B, int num_iter) {
 
 
 // computes a pyramid types
-void compute_pyramid(const std::launch l, Grid* A, Grid* B, int x, int y, int h);
-void compute_reverse(const std::launch l, Grid* A, Grid* B, int x, int y, int h);
+void compute_pyramid(const inncabs::launch l, Grid* A, Grid* B, int x, int y, int h);
+void compute_reverse(const inncabs::launch l, Grid* A, Grid* B, int x, int y, int h);
 
 // computes a wedge (piece between pyramids - x base line points in x direction)
-void compute_wedge_x(const std::launch l, Grid* A, Grid* B, int x, int y, int h);
-void compute_wedge_y(const std::launch l, Grid* A, Grid* B, int x, int y, int h);
+void compute_wedge_x(const inncabs::launch l, Grid* A, Grid* B, int x, int y, int h);
+void compute_wedge_y(const inncabs::launch l, Grid* A, Grid* B, int x, int y, int h);
 
 
 /**
  * Computes the pyramid with center point (x,y) of size s (edge size, must be odd)
  */
-void compute_pyramid(const std::launch l, Grid* A, Grid* B, int x, int y, int s) {
+void compute_pyramid(const inncabs::launch l, Grid* A, Grid* B, int x, int y, int s) {
 	assert(s % 2 == 1 && "Only odd sizes are supported!");
 	//assert(x >= s && y >= s && "Coordinates not matching!");
 
@@ -195,13 +198,13 @@ void compute_pyramid(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute 4 base-pyramids (parallel)
 	// #pragma omp task
-	std::future<void> f1 = std::async(l, compute_pyramid, l, A, B, ux, uy,  d);
+	inncabs::future<void> f1 = inncabs::async(l, compute_pyramid, l, A, B, ux, uy,  d);
 	// #pragma omp task
-	std::future<void> f2 = std::async(l, compute_pyramid, l, A, B, ux, ly,  d);
+	inncabs::future<void> f2 = inncabs::async(l, compute_pyramid, l, A, B, ux, ly,  d);
 	// #pragma omp task
-	std::future<void> f3 = std::async(l, compute_pyramid, l, A, B, lx, uy,  d);
+	inncabs::future<void> f3 = inncabs::async(l, compute_pyramid, l, A, B, lx, uy,  d);
 	// #pragma omp task
-	std::future<void> f4 = std::async(l, compute_pyramid, l, A, B, lx, ly,  d);
+	inncabs::future<void> f4 = inncabs::async(l, compute_pyramid, l, A, B, lx, ly,  d);
 
 	// #pragma omp taskwait
 	f1.wait();
@@ -211,13 +214,13 @@ void compute_pyramid(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute 4 wedges (parallel)
 	// #pragma omp task
-	f1 = std::async(l, compute_wedge_x, l, A, B, ux, y, d);
+	f1 = inncabs::async(l, compute_wedge_x, l, A, B, ux, y, d);
 	// #pragma omp task
-	f2 = std::async(l, compute_wedge_x, l, A, B, lx, y, d);
+	f2 = inncabs::async(l, compute_wedge_x, l, A, B, lx, y, d);
 	// #pragma omp task
-	f3 = std::async(l, compute_wedge_y, l, A, B, x, uy, d);
+	f3 = inncabs::async(l, compute_wedge_y, l, A, B, x, uy, d);
 	// #pragma omp task
-	f4 = std::async(l, compute_wedge_y, l, A, B, x, ly, d);
+	f4 = inncabs::async(l, compute_wedge_y, l, A, B, x, ly, d);
 
 	// #pragma omp taskwait
 	f1.wait();
@@ -234,7 +237,7 @@ void compute_pyramid(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 }
 
 
-void compute_reverse(const std::launch l, Grid* A, Grid* B, int x, int y, int s) {
+void compute_reverse(const inncabs::launch l, Grid* A, Grid* B, int x, int y, int s) {
 	assert(s % 2 == 1 && "Only odd sizes are supported!");
 
 	// check for terminal case
@@ -285,13 +288,13 @@ void compute_reverse(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute 4 wedges (parallel)
 	// #pragma omp task
-	std::future<void> f1 = std::async(l, compute_wedge_y, l, A, B, ux, y, d);
+	inncabs::future<void> f1 = inncabs::async(l, compute_wedge_y, l, A, B, ux, y, d);
 	// #pragma omp task
-	std::future<void> f2 = std::async(l, compute_wedge_y, l, A, B, lx, y, d);
+	inncabs::future<void> f2 = inncabs::async(l, compute_wedge_y, l, A, B, lx, y, d);
 	// #pragma omp task
-	std::future<void> f3 = std::async(l, compute_wedge_x, l, A, B, x, uy,  d);
+	inncabs::future<void> f3 = inncabs::async(l, compute_wedge_x, l, A, B, x, uy,  d);
 	// #pragma omp task
-	std::future<void> f4 = std::async(l, compute_wedge_x, l, A, B, x, ly, d);
+	inncabs::future<void> f4 = inncabs::async(l, compute_wedge_x, l, A, B, x, ly, d);
 
 	// #pragma omp taskwait
 	f1.wait();
@@ -301,13 +304,13 @@ void compute_reverse(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute 4 base-pyramids (parallel)
 	// #pragma omp task
-	f1 = std::async(l, compute_reverse, l, A, B, lx, ly,  d);
+	f1 = inncabs::async(l, compute_reverse, l, A, B, lx, ly,  d);
 	// #pragma omp task
-	f2 = std::async(l, compute_reverse, l, A, B, lx, uy,  d);
+	f2 = inncabs::async(l, compute_reverse, l, A, B, lx, uy,  d);
 	// #pragma omp task
-	f3 = std::async(l, compute_reverse, l, A, B, ux, ly,  d);
+	f3 = inncabs::async(l, compute_reverse, l, A, B, ux, ly,  d);
 	// #pragma omp task
-	f4 = std::async(l, compute_reverse, l, A, B, ux, uy,  d);
+	f4 = inncabs::async(l, compute_reverse, l, A, B, ux, uy,  d);
 
 	// #pragma omp taskwait
 	f1.wait();
@@ -317,7 +320,7 @@ void compute_reverse(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 }
 
 
-void compute_wedge_x(const std::launch l, Grid* A, Grid* B, int x, int y, int s) {
+void compute_wedge_x(const inncabs::launch l, Grid* A, Grid* B, int x, int y, int s) {
 	assert(s > 0);
 
 	if (s <= CUT_OFF) {
@@ -354,9 +357,9 @@ void compute_wedge_x(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute bottom wedges (parallel)
 	// #pragma omp task
-	std::future<void> f1 = std::async(l, compute_wedge_x, l, A, B, x-h, y, d);
+	inncabs::future<void> f1 = inncabs::async(l, compute_wedge_x, l, A, B, x-h, y, d);
 	// #pragma omp task
-	std::future<void> f2 = std::async(l, compute_wedge_x, l, A, B, x+h, y, d);
+	inncabs::future<void> f2 = inncabs::async(l, compute_wedge_x, l, A, B, x+h, y, d);
 	// #pragma omp taskwait
 	f1.wait();
 	f2.wait();
@@ -369,15 +372,15 @@ void compute_wedge_x(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute remaining two wedges (parallel)
 	// #pragma omp task
-	f1 = std::async(l, compute_wedge_x, l, A, B, x, y-h, d);
+	f1 = inncabs::async(l, compute_wedge_x, l, A, B, x, y-h, d);
 	// #pragma omp task
-	f2 = std::async(l, compute_wedge_x, l, A, B, x, y+h, d);
+	f2 = inncabs::async(l, compute_wedge_x, l, A, B, x, y+h, d);
 	// #pragma omp taskwait
 	f1.wait();
 	f2.wait();
 }
 
-void compute_wedge_y(const std::launch l, Grid* A, Grid* B, int x, int y, int s) {
+void compute_wedge_y(const inncabs::launch l, Grid* A, Grid* B, int x, int y, int s) {
 	assert(s > 0);
 
 	if (s <= CUT_OFF) {
@@ -415,9 +418,9 @@ void compute_wedge_y(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute bottom wedges (parallel)
 	// #pragma omp task
-	std::future<void> f1 = std::async(l, compute_wedge_y, l, A, B, x, y-h, d);
+	inncabs::future<void> f1 = inncabs::async(l, compute_wedge_y, l, A, B, x, y-h, d);
 	// #pragma omp task
-	std::future<void> f2 = std::async(l, compute_wedge_y, l, A, B, x, y+h, d);
+	inncabs::future<void> f2 = inncabs::async(l, compute_wedge_y, l, A, B, x, y+h, d);
 	// #pragma omp taskwait
 	f1.wait();
 	f2.wait();
@@ -430,9 +433,9 @@ void compute_wedge_y(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute remaining two wedges (parallel)
 	// #pragma omp task
-	f1 = std::async(l, compute_wedge_y, l, A, B, x-h, y, d);
+	f1 = inncabs::async(l, compute_wedge_y, l, A, B, x-h, y, d);
 	// #pragma omp task
-	f2 = std::async(l, compute_wedge_y, l, A, B, x+h, y, d);
+	f2 = inncabs::async(l, compute_wedge_y, l, A, B, x+h, y, d);
 	// #pragma omp taskwait
 	f1.wait();
 	f2.wait();
@@ -440,7 +443,7 @@ void compute_wedge_y(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 
 
-void jacobi_recursive(const std::launch l, Grid* A, Grid* B, int num_iter) {
+void jacobi_recursive(const inncabs::launch l, Grid* A, Grid* B, int num_iter) {
 	// compute full pyramid
 	inncabs::message("\nProcessing main pyramid ...\n");
 	compute_pyramid(l, A, B, N/2, N/2, N-2);

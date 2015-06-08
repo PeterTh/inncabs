@@ -1,3 +1,8 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
 typedef long long ll;
@@ -14,18 +19,18 @@ bool valid(const int n, const int col, const history& h) {
 	return true;
 }
 
-ll solutions(const int n, const std::launch l, const int col = 0, history h = history()) {
+ll solutions(const int n, const inncabs::launch l, const int col = 0, history h = history()) {
 	if(col == n) {
 		return 1;
 	} else {
-		std::vector<std::future<ll>> futures;
+		std::vector<inncabs::future<ll>> futures;
 		for(int row=0; row<n; ++row) {
 			history x = h;
 			x.push_back(row);
-			if(valid(n, col+1, x)) futures.push_back(std::async(l, solutions, n, l, col+1, x));
+			if(valid(n, col+1, x)) futures.push_back(inncabs::async(l, solutions, n, l, col+1, x));
 		}
 		return accumulate(futures.begin(), futures.end(), 0ll,
-			[](ll sum, std::future<ll>& b) { return sum + b.get(); });
+			[](ll sum, inncabs::future<ll>& b) { return sum + b.get(); });
 	}
 }
 
@@ -39,8 +44,9 @@ int main(int argc, char** argv) {
 	ss << "N-Queens N=" << n;
 
 	inncabs::run_all(
-		[n](const std::launch l) { return solutions(n, l); },
+		[n](const inncabs::launch l) { return solutions(n, l); },
 		[n](ll result) { return result == CHECK[n-1]; },
-		ss.str() 
+		ss.str()
 		);
+    return 0;
 }

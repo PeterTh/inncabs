@@ -1,9 +1,14 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
 /*
  * Based on the Barcelona OpenMP Tasks Suite "floorplan" benchmark
  * Copyright (C) 2009 Barcelona Supercomputing Center - Centro Nacional de Supercomputacion
- * Copyright (C) 2009 Universitat Politecnica de Catalunya                                   
+ * Copyright (C) 2009 Universitat Politecnica de Catalunya
  * Original code from the Cilk project
  * Copyright (c) 1996 Massachusetts Institute of Technology
  */
@@ -23,7 +28,7 @@ int main(int argc, char** argv) {
 	REAL *D = alloc_matrix(arg_size);
 
 	std::stringstream ss;
-	ss << "Strassen Algorithm (" << arg_size << " x " << arg_size 
+	ss << "Strassen Algorithm (" << arg_size << " x " << arg_size
 		<< " matrix with cutoff " << arg_cutoff_value << ") ";
 
 	init_matrix(arg_size, A, arg_size);
@@ -31,7 +36,7 @@ int main(int argc, char** argv) {
 	OptimizedStrassenMultiply_seq(D, A, B, arg_size, arg_size, arg_size, arg_size, 1);
 
 	inncabs::run_all(
-		[&](const std::launch l) {
+		[&](const inncabs::launch l) {
 			OptimizedStrassenMultiply_par(l, C, A, B, arg_size, arg_size, arg_size, arg_size, 1);
 			return 1;
 		},
@@ -40,4 +45,5 @@ int main(int argc, char** argv) {
 		},
 		ss.str()
 		);
+    return 0;
 }

@@ -1,3 +1,8 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
 /*
@@ -15,16 +20,17 @@ int main(int argc, char** argv) {
 
 	std::stringstream ss;
 	ss << "Floorplan with input file \"" << fn << "\"";
-	
+
 	inncabs::run_all(
-		[&](const std::launch l) {
+		[&](const inncabs::launch l) {
 			compute_floorplan(l);
 			return 1;
 		},
 		[&](int result) {
-			return floorplan_verify(); 
+			return floorplan_verify();
 		},
 		ss.str(),
 		[&] { floorplan_init(fn); }
 		);
+    return 0;
 }

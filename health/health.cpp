@@ -1,3 +1,8 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
 /*
@@ -19,14 +24,15 @@ int main(int argc, char** argv) {
 	read_input_data(fn);
 
 	inncabs::run_all(
-		[&](const std::launch l) {
+		[&](const inncabs::launch l) {
 			sim_village_main_par(l, top);
 			return 1;
 		},
 		[&](int result) {
-			return check_village(top); 
+			return check_village(top);
 		},
 		ss.str(),
 		[&] { allocate_village(&top, NULL, NULL, sim_level, 0); }
 		);
+    return 0;
 }

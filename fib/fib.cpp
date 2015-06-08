@@ -1,12 +1,17 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
 typedef long long ll;
 
-ll fib(int n, const std::launch l) {
+ll fib(int n, const inncabs::launch l) {
 	if(n < 2) return n;
 
-	auto x = std::async(l, fib, n - 1, l);
-	auto y = std::async(l, fib, n - 2, l);
+	auto x = inncabs::async(l, fib, n - 1, l);
+	auto y = inncabs::async(l, fib, n - 2, l);
 
 	return x.get() + y.get();
 }
@@ -27,8 +32,9 @@ int main(int argc, char** argv) {
 	ss << "Fibonacci N=" << n;
 
 	inncabs::run_all(
-		[n](const std::launch l) { return fib(n, l); },
+		[n](const inncabs::launch l) { return fib(n, l); },
 		[n](ll result) { return result == fib_verify_value(n); },
-		ss.str() 
+		ss.str()
 		);
+    return 0;
 }

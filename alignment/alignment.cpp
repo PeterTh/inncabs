@@ -1,8 +1,13 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
-/* 
+/*
  * Based on the Barcelona OpenMP Tasks Suite "alignment" benchmark
- * Original code from the Application Kernel Matrix by Cray, that was based on the ClustalW application 
+ * Original code from the Application Kernel Matrix by Cray, that was based on the ClustalW application
  */
 
 #include <cmath>
@@ -18,13 +23,14 @@ int main(int argc, char** argv) {
 	align_seq();
 
 	inncabs::run_all(
-		[](const std::launch l) {
+		[](const inncabs::launch l) {
 			return pairalign(l);
 		},
 		[](int result) {
-			return align_verify(); 
+			return align_verify();
 		},
 		name,
 		[]() { align_init(); }
 		);
+    return 0;
 }

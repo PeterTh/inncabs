@@ -8,7 +8,7 @@
 /*
 * Copyright (c) 2007 The Unbalanced Tree Search (UTS) Project Team:
 * -----------------------------------------------------------------
-*  
+*
 *  This file is part of the unbalanced tree search benchmark.  This
 *  project is licensed under the MIT Open Source license.  See the LICENSE
 *  file for copyright and licensing information.
@@ -25,7 +25,7 @@
 *   Jinze Liu         liu,
 *   Stephen Olivier   olivier,
 *   Jan Prins*        prins at cs.umd.edu>
-* 
+*
 * The Ohio State University:
 *   James Dinan      <dinan,
 *   Gerald Sabin      sabin,
@@ -49,7 +49,7 @@
 *
 * The above copyright notice and this permission notice shall be included in
 * all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
@@ -73,7 +73,7 @@
 struct node_t {
   int height;        // depth of this node in the tree
   int numChildren;   // number of children, -1 => not yet determined
-  
+
   /* for RNG state associated with this node */
   struct state_t state;
 };
@@ -81,10 +81,10 @@ struct node_t {
 typedef struct node_t Node;
 
 /* Tree type
- *   Trees are generated using a Galton-Watson process, in 
- *   which the branching factor of each node is a random 
+ *   Trees are generated using a Galton-Watson process, in
+ *   which the branching factor of each node is a random
  *   variable.
- *   
+ *
  *   The random variable can follow a binomial distribution
  *   or a geometric distribution.  Hybrid tree are
  *   generated with geometric distributions near the
@@ -105,7 +105,7 @@ extern int    verbose;
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
-unsigned long long parTreeSearch(const std::launch l, int depth, Node *parent, int numChildren);
+unsigned long long parTreeSearch(const inncabs::launch l, int depth, Node *parent, int numChildren);
 
 int    uts_paramsToStr(char *strBuf, int ind);
 void   uts_read_file(const char *file);
@@ -144,12 +144,12 @@ double b_0   = 4.0; // default branching factor at the root
 int   rootId = 0;   // default seed for RNG state at root
 /***********************************************************
 *  The branching factor at the root is specified by b_0.
-*  The branching factor below the root follows an 
+*  The branching factor below the root follows an
 *     identical binomial distribution at all nodes.
-*  A node has m children with prob q, or no children with 
+*  A node has m children with prob q, or no children with
 *     prob (1-q).  The expected branching factor is q * m.
 *
-*  Default parameter values 
+*  Default parameter values
 ***********************************************************/
 int    nonLeafBF   = 4;            // m
 double nonLeafProb = 15.0 / 64.0;  // q
@@ -190,7 +190,7 @@ void uts_initRoot(Node *root) {
 
 int uts_numChildren_bin(Node *parent) {
 	// distribution is identical everywhere below root
-	int    v = rng_rand(parent->state.state);	
+	int    v = rng_rand(parent->state.state);
 	double d = rng_toProb(v);
 
 	return (d < nonLeafProb) ? nonLeafBF : 0;
@@ -223,7 +223,7 @@ int uts_numChildren(Node *parent) {
 /***********************************************************
 * Recursive depth-first implementation                    *
 ***********************************************************/
-unsigned long long parallel_uts(const std::launch l, Node *root) {
+unsigned long long parallel_uts(const inncabs::launch l, Node *root) {
 	unsigned long long num_nodes = 0 ;
 	root->numChildren = uts_numChildren(root);
 
@@ -232,12 +232,12 @@ unsigned long long parallel_uts(const std::launch l, Node *root) {
 	return num_nodes;
 }
 
-unsigned long long parTreeSearch(const std::launch l, int depth, Node *parent, int numChildren) {
+unsigned long long parTreeSearch(const inncabs::launch l, int depth, Node *parent, int numChildren) {
 	Node *n;
 	n = (Node*)alloca(sizeof(Node)*numChildren);
 	Node *nodePtr;
 	unsigned long long subtreesize = 1;
-	std::vector<std::future<unsigned long long>> futures;
+	std::vector<inncabs::future<unsigned long long>> futures;
 
 	// Recurse on the children
 	for(int i = 0; i < numChildren; i++) {
@@ -252,7 +252,7 @@ unsigned long long parTreeSearch(const std::launch l, int depth, Node *parent, i
 
 		nodePtr->numChildren = uts_numChildren(nodePtr);
 
-		futures.push_back( std::async(l, parTreeSearch, l, depth+1, nodePtr, nodePtr->numChildren) );	
+		futures.push_back( inncabs::async(l, parTreeSearch, l, depth+1, nodePtr, nodePtr->numChildren) );
 	}
 
 	for(auto& f: futures) {

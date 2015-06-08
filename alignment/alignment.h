@@ -3,7 +3,7 @@
 void del(int k, int *print_ptr, int *last_print, int *displ);
 void add(int v, int *print_ptr, int *last_print, int *displ);
 int calc_score(int iat, int jat, int v1, int v2, int seq1, int seq2);
-int get_matrix(int *matptr, int *xref, int scale); 
+int get_matrix(int *matptr, int *xref, int scale);
 void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *maxscore, int g, int gh);
 void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int maxscore, int g, int gh);
 int diff(int A, int B, int M, int N, int tb, int te, int *pr_ptr, int *last_print, int *displ, int seq1, int seq2, int g, int gh);
@@ -26,7 +26,7 @@ void del(int k, int *print_ptr, int *last_print, int *displ) {
 	if (*last_print<0) {
 		displ[(*print_ptr)-1] -=  k;
 		*last_print = displ[(*print_ptr)-1];
-	} else {  
+	} else {
 		displ[(*print_ptr)++]  = -k;
 		*last_print = -k;
 	}
@@ -101,7 +101,7 @@ int get_matrix(int *matptr, int *xref, int scale) {
 	av3 /= (int) (((double)(maxres*maxres-maxres))/2);
 	mat_avscore = -av3;
 
-	min = matrix[0][0]; 
+	min = matrix[0][0];
 	max = matrix[0][0];
 
 	for (i = 0; i <= max_aa; i++)
@@ -127,7 +127,7 @@ int get_matrix(int *matptr, int *xref, int scale) {
 		return(maxres);
 }
 
-void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *maxscore, int g, int gh) { 
+void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *maxscore, int g, int gh) {
 	int i, j, f, p, t, hh;
 	int HH[MAX_ALN_LENGTH];
 	int DD[MAX_ALN_LENGTH];
@@ -167,19 +167,19 @@ void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *max
 	}
 }
 
-void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int maxscore, int g, int gh) { 
+void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int maxscore, int g, int gh) {
 	int i, j, f, p, t, hh, cost;
 	int HH[MAX_ALN_LENGTH];
 	int DD[MAX_ALN_LENGTH];
 
 	cost = 0;
-	*sb1  = 1; 
+	*sb1  = 1;
 	*sb2 = 1;
 
 	for (i = se2; i > 0; i--){ HH[i] = -1; DD[i] = -1;}
 
 	for (i = se1; i > 0; i--) {
-		hh = -1; 
+		hh = -1;
 		f = -1;
 		if (i == se1) p = 0; else p = -1;
 
@@ -383,7 +383,7 @@ double tracepath(int tsb1, int tsb2, int *print_ptr, int *displ, int seq1, int s
 	return (100.0 * (double) count);
 }
 
-int pairalign(const std::launch l) {
+int pairalign(const inncabs::launch l) {
 	int i, n, m, si, sj;
 	int len1, maxres;
 	int    *mat_xref, *matptr;
@@ -395,7 +395,7 @@ int pairalign(const std::launch l) {
 
 	inncabs::message("Start aligning ");
 
-	std::vector<std::future<void>> futures;
+	std::vector<inncabs::future<void>> futures;
 	for (si = 0; si < nseqs; si++) {
 		n = seqlen_array[si+1];
 		for (i = 1, len1 = 0; i <= n; i++) {
@@ -408,7 +408,7 @@ int pairalign(const std::launch l) {
 			if ( n == 0 || m == 0 ) {
 				bench_output[si*nseqs+sj] = (int) 1.0;
 			} else {
-				futures.push_back( std::async(l, [&,i,m,n,si,sj,len1]() mutable {
+				futures.push_back( inncabs::async(l, [&,i,m,n,si,sj,len1]() mutable {
 					int se1, se2, sb1, sb2, maxscore, seq1, seq2, g, gh, len2;
 					int displ[2*MAX_ALN_LENGTH+1];
 					int print_ptr, last_print;
@@ -528,13 +528,13 @@ void init_matrix(void) {
 	for (i = 0; i < NUMRES; i++) def_aa_xref[i]  = -1;
 
 	c1 = amino_acid_order[0];
-	for (i = 0; c1; i++) { 
+	for (i = 0; c1; i++) {
 		c2 = amino_acid_codes[0];
 		for (j = 0; c2; j++) {
 			if (c1 == c2) {def_aa_xref[i] = j; break;}
 			c2 = amino_acid_codes[j+1];
 		}
-		c1 = amino_acid_order[i+1]; 
+		c1 = amino_acid_order[i+1];
 	}
 }
 
@@ -631,7 +631,7 @@ bool align_verify() {
 		for(j = 0; j<nseqs; j++) {
 			if (bench_output[i*nseqs+j] != seq_output[i*nseqs+j]) {
 				std::stringstream ss;
-				ss << "Error: Optimized prot. (" << i+1 << ":" << j+1 << ")=" << (int) bench_output[i*nseqs+j] 
+				ss << "Error: Optimized prot. (" << i+1 << ":" << j+1 << ")=" << (int) bench_output[i*nseqs+j]
 				<< " Sequential prot.  (" << i+1 << ":" << j+1 << ")=" << (int) seq_output[i*nseqs+j] << "\n";
 				inncabs::message(ss.str());
 				result = false;
