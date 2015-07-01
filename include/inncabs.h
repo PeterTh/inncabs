@@ -58,20 +58,74 @@ namespace {
 
 namespace inncabs {
 
+//#define COUNTING_DEFER
+
 #if defined(INNCABS_USE_HPX)
+#ifdef COUNTING_DEFER
+	namespace counting_defer
+	{
+		using hpx::async;
+	}
+#else
 	using hpx::async;
+#endif
 	using hpx::launch;
 	using hpx::future;
 	using hpx::thread;
 	namespace this_thread { using hpx::this_thread::sleep_for; }
 	using hpx::lcos::local::mutex;
 #else
+#ifdef COUNTING_DEFER
+	namespace counting_defer
+	{
+		using std::async;
+	}
+#else
+	using std::async;
+#endif
 	using std::async;
 	using std::launch;
 	using std::future;
 	using std::thread;
 	namespace this_thread { using std::this_thread::sleep_for; }
 	using std::mutex;
+#endif
+
+#ifdef COUNTING_DEFER
+	std::atomic<unsigned> g_par_count;
+
+	template < class Function, class... Args >
+	auto async(inncabs::launch policy, Function&& f, Args&&... args)
+		-> typename std::enable_if< std::is_void<decltype(f(args...))>::value, decltype(inncabs::counting_defer::async(policy, f, args...))>::type {
+		if(policy != (inncabs::launch::deferred | inncabs::launch::async)) return inncabs::counting_defer::async(policy, f, args...);
+		if(g_par_count.fetch_add(1) < inncabs::thread::hardware_concurrency()) {
+			return inncabs::counting_defer::async(inncabs::launch::async, [&]() {
+				f(args...);
+				g_par_count.fetch_sub(1);
+			});
+		}
+		else {
+			g_par_count.fetch_sub(1);
+		}
+		return inncabs::counting_defer::async(inncabs::launch::deferred, f, args...);
+	}
+
+	template < class Function, class... Args >
+	auto async(inncabs::launch policy, Function&& f, Args&&... args)
+		-> typename std::enable_if< !std::is_void<decltype(f(args...))>::value, decltype(inncabs::counting_defer::async(policy, f, args...))>::type {
+		if(policy != (inncabs::launch::deferred | inncabs::launch::async)) return inncabs::counting_defer::async(policy, f, args...);
+		if(g_par_count.fetch_add(1) < inncabs::thread::hardware_concurrency()) {
+			return inncabs::counting_defer::async(inncabs::launch::async, [&]() {
+				auto ret = f(args...);
+				g_par_count.fetch_sub(1);
+				return ret;
+			});
+		}
+		else {
+			g_par_count.fetch_sub(1);
+		}
+		return inncabs::counting_defer::async(inncabs::launch::deferred, f, args...);
+	}
 #endif
 
 	const static char* ENV_VAR_CSV = "INNCABS_CSV_OUTPUT";
@@ -175,43 +229,4 @@ namespace inncabs {
 		std::cerr << msg;
 		exit(-1);
 	}
-
-
-	//#define COUNTING_DEFER
-	#ifdef COUNTING_DEFER
-	std::atomic<unsigned> g_par_count;
-
-	template < class Function, class... Args >
-	auto async(inncabs::launch policy, Function&& f, Args&&... args)
-		-> typename std::enable_if< std::is_void<decltype(f(args...))>::value, decltype(inncabs::async(policy, f, args...))>::type {
-		if(policy != (inncabs::launch::deferred | inncabs::launch::async)) return inncabs::async(policy, f, args...);
-		if(g_par_count.fetch_add(1) < inncabs::thread::hardware_concurrency()) {
-			return inncabs::async(inncabs::launch::async, [&]() {
-				f(args...);
-				g_par_count.fetch_sub(1);
-			});
-		}
-		else {
-			g_par_count.fetch_sub(1);
-		}
-		return inncabs::async(inncabs::launch::deferred, f, args...);
-	}
-
-	template < class Function, class... Args >
-	auto async(inncabs::launch policy, Function&& f, Args&&... args)
-		-> typename std::enable_if< !std::is_void<decltype(f(args...))>::value, decltype(inncabs::async(policy, f, args...))>::type {
-		if(policy != (inncabs::launch::deferred | inncabs::launch::async)) return inncabs::async(policy, f, args...);
-		if(g_par_count.fetch_add(1) < inncabs::thread::hardware_concurrency()) {
-			return inncabs::async(inncabs::launch::async, [&]() {
-				auto ret = f(args...);
-				g_par_count.fetch_sub(1);
-				return ret;
-			});
-		}
-		else {
-			g_par_count.fetch_sub(1);
-		}
-		return inncabs::async(inncabs::launch::deferred, f, args...);
-	}
-	#endif
 }
