@@ -83,7 +83,6 @@ namespace inncabs {
 #else
 	using std::async;
 #endif
-	using std::async;
 	using std::launch;
 	using std::future;
 	using std::thread;
