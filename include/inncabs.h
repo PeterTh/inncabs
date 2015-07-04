@@ -52,7 +52,7 @@ namespace {
 		double m = mean(vec);
 		double dsum = 0.0;
 		for(const auto& e : vec) dsum += abs(e-m);
-		return sqrt(dsum / vec.size());
+		return sqrt(pow(dsum, 2) / vec.size());
 	}
 }
 
