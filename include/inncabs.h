@@ -51,8 +51,8 @@ namespace {
 		if(vec.size() == 1) return 0.0;
 		double m = mean(vec);
 		double dsum = 0.0;
-		for(const auto& e : vec) dsum += abs(e-m);
-		return sqrt(pow(dsum, 2) / vec.size());
+		for(const auto& e : vec) dsum += pow((e-m), 2);
+		return sqrt(dsum / vec.size());
 	}
 }
 
