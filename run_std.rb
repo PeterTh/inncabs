@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
 
-#specify the directory for repo of inncabs
+#specify the directory for repo of inncabs 
+#     (uses *.cpp filenames or you may specify the executables to run)
 repo_dir = './'
 
-#specify build directory for inncabs
+#specify build directory for inncabs (excutable are in bin)
 build_dir = './'
 
 require repo_dir + 'os.rb'
@@ -23,16 +24,7 @@ end
 # set the core counts, apps & launch type to run 
 
 cores = [1,2,4,8,16,20,32,40]
-apps = ["alignment", "fft", "fib", "floorplan", "health", "intersim", 
-        "nqueens", "pyramids", "qap", "round", "sort", "sparselu", 
-        "strassen", "uts"]
 launch_types = %w(deferred optional async)
-
-print "Preparing to run: " 
-apps.each do |cppfile|
-    print cppfile.green.bold , " "
-end
-    print "\n"
 
 repeats = read_int_param("--repeats", 5)
 timeout_secs = read_int_param("--timeout", 100)
@@ -70,8 +62,8 @@ win_cpu_aff = {
 
 results = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Array.new(2) } } } 
 
-apps.each do |cppfile|
-    next if !ARGV.empty? && !ARGV.any? { |arg| cppfile =~ /#{arg}/ }
+Dir[repo_dir + "**/*.cpp"].each do |cppfile|
+	next if !ARGV.empty? && !ARGV.any? { |arg| cppfile =~ /#{arg}/ }
     launch_types.each do |launch_type|
         cores.each do |num_cpus|
             if(launch_type == "deferred" && num_cpus > cores[0])
