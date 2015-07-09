@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 
-#specify the directory for repo of inncabs 
+#specify the directory for repo of inncabs (input files are in bin/input) and
 #     (uses *.cpp filenames or you may specify the executables to run)
-repo_dir = './'
+repo_dir = '../'
 
-#specify build directory for inncabs (excutable are in bin)
+#specify build directory for inncabs (excutable are name/name)
 build_dir = './'
 
 require repo_dir + 'os.rb'
@@ -70,28 +70,21 @@ Dir[repo_dir + "**/*.cpp"].each do |cppfile|
                 next
             end
             fname = File.basename(cppfile, ".cpp")
-            binfname =  build_dir + "bin/" + fname
-    
-            if th_per_core == "1"
-                cpulist = (0..num_cpus-1).to_a.join(",")
-            else
-                cpulist = (0..nproc-1).step(2).to_a.concat((1..nproc-1).step(2).to_a)[0..num_cpus-1].join(",")
-            end
-            #print "cpulist ", cpulist, "\n"
-                  
+            binfname =  build_dir + fname + "/" + fname
+            
             if(OS.windows?)
-				command  = "set INNCABS_REPEATS=#{repeats}\n"
-                command += "set INNCABS_MIN_OUTPUT=true\n"
-				command += "set INNCABS_LAUNCH_TYPES=#{launch_type}\n"
-				command += "set INNCABS_TIMEOUT=#{timeout_secs*1000}\n"
+				command  = "set INNCABS_REPEATS=#{repeats}\nset INNCABS_MIN_OUTPUT=true\n"
+				command += "set INNCABS_LAUNCH_TYPES=#{launch_type}\nset INNCABS_TIMEOUT=#{timeout_secs*1000}\n"
                 command += "start #{win_cpu_aff[num_cpus]} /b /wait #{binfname}"
             else
-                command = "timeout #{timeout_secs} taskset -c #{cpulist} #{binfname}"
+                command = "timeout #{timeout_secs} #{binfname} --hpx:threads #{num_cpus}"
+                command = command + " --hpx:bind=balanced "
 				command = "export INNCABS_REPEATS=#{repeats}\n" + command
-                command = "export INNCABS_MIN_OUTPUT=true\n" + command
-                command = "export INNCABS_LAUNCH_TYPES=#{launch_type}\n" + command
+				command = "export INNCABS_MIN_OUTPUT=true\n" + command
+				command = "export INNCABS_LAUNCH_TYPES=#{launch_type}\n" + command
                 command = "ulimit -t #{timeout_secs*num_cpus}\n" + command
             end
+           
             command += " " + params[fname] if params.include?(fname)
             print "======== running " + fname.green.bold + " (#{launch_type}, #{num_cpus}): " 
             #puts command

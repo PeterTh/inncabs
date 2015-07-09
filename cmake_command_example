@@ -1,0 +1,6 @@
+#-DCMAKE_COMPILER=clang++ \ 
+
+cmake -DHPX_ROOT=<hpx build directory> \
+    -DHPX_DIR=<hpx build directory>/lib/cmake/hpx \
+    ~/<hpx source>
+
