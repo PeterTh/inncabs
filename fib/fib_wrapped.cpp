@@ -22,7 +22,6 @@ std::tuple<ll, long long> fib_wrapped(int n, const inncabs::launch l) {
     auto start = highc.now();
     // exec
     auto result = fib(n, l);
-    // stop time counter and get difference -> da_mezthingy
     auto end = highc.now();
     return std::tuple<ll, long long>(result, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 }
