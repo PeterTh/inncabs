@@ -19,6 +19,30 @@ bool valid(const int n, const int col, const history& h) {
 	return true;
 }
 
+#if defined(INNCABS_USE_HPX_FUTURIZED)
+inncabs::future<ll> solutions(const int n, const inncabs::launch l, const int col = 0, history h = history()) {
+    if(col == n) {
+        return hpx::make_ready_future(1LL);
+    } else {
+        std::vector<inncabs::future<ll>> futures;
+        for(int row=0; row<n; ++row) {
+            history x = h;
+            x.push_back(row);
+            if(valid(n, col+1, x)) futures.push_back(inncabs::async(l, solutions, n, l, col+1, x));
+        }
+        return hpx::lcos::local::dataflow(
+            [](std::vector<inncabs::future<ll>> && futures)
+            {
+                return accumulate(futures.begin(), futures.end(), 0ll,
+                    [](ll sum, inncabs::future<ll>& b)
+                    {
+                        return sum + b.get();
+                    });
+            },
+            futures);
+    }
+}
+#else
 ll solutions(const int n, const inncabs::launch l, const int col = 0, history h = history()) {
 	if(col == n) {
 		return 1;
@@ -33,6 +57,7 @@ ll solutions(const int n, const inncabs::launch l, const int col = 0, history h 
 			[](ll sum, inncabs::future<ll>& b) { return sum + b.get(); });
 	}
 }
+#endif
 
 static const ll CHECK[] = { 1,0,0,2,10,4,40,92,352,724,2680,14200,73712,365596,2279184,14772512,95815104,666090624,4968057848,39029188884,314666222712 };
 
@@ -44,7 +69,14 @@ int main(int argc, char** argv) {
 	ss << "N-Queens N=" << n;
 
 	inncabs::run_all(
-		[n](const inncabs::launch l) { return solutions(n, l); },
+		[n](const inncabs::launch l)
+        {
+#if defined(INNCABS_USE_HPX_FUTURIZED)
+            return solutions(n, l).get();
+#else
+            return solutions(n, l);
+#endif
+        },
 		[n](ll result) { return result == CHECK[n-1]; },
 		ss.str()
 		);
