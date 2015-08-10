@@ -36,8 +36,6 @@
 * log factor in the critical path (left as homework).
 */
 
-#define INNCABS_USE_HPX_FUTURIZED
-
 #include "../include/inncabs.h"
 
 #include <cstring>
