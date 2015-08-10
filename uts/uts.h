@@ -105,7 +105,11 @@ extern int    verbose;
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
+#if defined(INNCABS_USE_HPX_FUTURIZED)
+inncabs::future<unsigned long long> parTreeSearch(const inncabs::launch l, int depth, Node *parent, int numChildren);
+#else
 unsigned long long parTreeSearch(const inncabs::launch l, int depth, Node *parent, int numChildren);
+#endif
 
 int    uts_paramsToStr(char *strBuf, int ind);
 void   uts_read_file(const char *file);
@@ -223,6 +227,52 @@ int uts_numChildren(Node *parent) {
 /***********************************************************
 * Recursive depth-first implementation                    *
 ***********************************************************/
+#if defined(INNCABS_USE_HPX_FUTURIZED)
+unsigned long long parallel_uts(const inncabs::launch l, Node *root) {
+    unsigned long long num_nodes = 0 ;
+    root->numChildren = uts_numChildren(root);
+
+    num_nodes = parTreeSearch(l, 0, root, root->numChildren).get();
+
+    return num_nodes;
+}
+
+inncabs::future<unsigned long long> parTreeSearch(const inncabs::launch l, int depth, Node *parent, int numChildren) {
+    Node *n;
+    n = new Node[numChildren]; //(Node*)alloca(sizeof(Node)*numChildren);
+    Node *nodePtr;
+
+    std::vector<inncabs::future<unsigned long long>> futures;
+
+    // Recurse on the children
+    for(int i = 0; i < numChildren; i++) {
+        nodePtr = &n[i];
+
+        nodePtr->height = parent->height + 1;
+
+        // The following line is the work (one or more SHA-1 ops)
+        for(int j = 0; j < computeGranularity; j++) {
+            rng_spawn(parent->state.state, nodePtr->state.state, i);
+        }
+
+        nodePtr->numChildren = uts_numChildren(nodePtr);
+
+        futures.push_back( inncabs::async(l, parTreeSearch, l, depth+1, nodePtr, nodePtr->numChildren) );
+    }
+
+    return hpx::lcos::local::dataflow(
+        [n](std::vector<inncabs::future<unsigned long long>> && futures)
+        {
+            unsigned long long subtreesize = 1;
+            for(auto& f: futures)
+                subtreesize += f.get();
+
+            delete n;
+            return subtreesize;
+        },
+        futures);
+}
+#else
 unsigned long long parallel_uts(const inncabs::launch l, Node *root) {
 	unsigned long long num_nodes = 0 ;
 	root->numChildren = uts_numChildren(root);
@@ -261,6 +311,7 @@ unsigned long long parTreeSearch(const inncabs::launch l, int depth, Node *paren
 
 	return subtreesize;
 }
+#endif
 
 void uts_read_file(const char *filename) {
 	FILE *fin = fopen(filename, "r");
