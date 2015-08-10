@@ -24,7 +24,7 @@ end
 # set the core counts, apps & launch type to run 
 
 cores = [1,2,4,8,16,20,32,40]
-launch_types = %w(deferred optional async)
+launch_types = %w(deferred optional async fork)
 
 repeats = read_int_param("--repeats", 5)
 timeout_secs = read_int_param("--timeout", 100)
