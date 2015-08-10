@@ -151,7 +151,11 @@ namespace inncabs {
 		// read environment variables
 		bool csvoutput = readEnvBool(ENV_VAR_CSV);
 		bool minoutput = readEnvBool(ENV_VAR_MIN);
+#if defined(INNCABS_USE_HPX)
+		std::string configSelection = "deferred,async,optional,fork";
+#else
 		std::string configSelection = "deferred,async,optional";
+#endif
 		if(getenv(ENV_VAR_LAUNCH)) configSelection = getenv(ENV_VAR_LAUNCH);
 		unsigned repeats = 1;
 		if(getenv(ENV_VAR_REPEATS)) repeats = std::atol(getenv(ENV_VAR_REPEATS));
@@ -180,7 +184,11 @@ namespace inncabs {
 		std::vector<LaunchConfiguration> configurations {
 			LaunchConfiguration { inncabs::launch::deferred, "deferred" },
 			LaunchConfiguration { inncabs::launch::deferred | inncabs::launch::async, "optional" },
-			LaunchConfiguration { inncabs::launch::async, "async" } };
+			LaunchConfiguration { inncabs::launch::async, "async" }
+#if defined(INNCABS_USE_HPX)
+		,	LaunchConfiguration { hpx::launch::fork, "fork" }
+#endif
+			};
 
 		for(const auto& config : configurations) {
 			if(configSelection.find(std::get<1>(config)) != std::string::npos) {
