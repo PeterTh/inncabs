@@ -81,6 +81,7 @@ Dir[repo_dir + "**/*.cpp"].each do |cppfile|
                 command = command + " --hpx:bind=balanced "
 				command = "export INNCABS_REPEATS=#{repeats}\n" + command
 				command = "export INNCABS_MIN_OUTPUT=true\n" + command
+				command = "export INNCABS_TIMES_OUTPUT=true\n" + command
 				command = "export INNCABS_LAUNCH_TYPES=#{launch_type}\n" + command
                 command = "ulimit -t #{timeout_secs*num_cpus}\n" + command
             end

@@ -129,6 +129,7 @@ namespace inncabs {
 
 	const static char* ENV_VAR_CSV = "INNCABS_CSV_OUTPUT";
 	const static char* ENV_VAR_MIN = "INNCABS_MIN_OUTPUT";
+	const static char* ENV_VAR_TIMES = "INNCABS_TIMES_OUTPUT";
 	const static char* ENV_VAR_REPEATS = "INNCABS_REPEATS";
 	const static char* ENV_VAR_LAUNCH = "INNCABS_LAUNCH_TYPES";
 	const static char* ENV_VAR_TIMEOUT = "INNCABS_TIMEOUT";
@@ -151,6 +152,7 @@ namespace inncabs {
 		// read environment variables
 		bool csvoutput = readEnvBool(ENV_VAR_CSV);
 		bool minoutput = readEnvBool(ENV_VAR_MIN);
+		bool times_output = readEnvBool(ENV_VAR_TIMES);
 #if defined(INNCABS_USE_HPX)
 		std::string configSelection = "deferred,async,optional,fork";
 #else
@@ -202,6 +204,11 @@ namespace inncabs {
 				double std_dev = stddev(times);
 				if(minoutput) {
 					std::cout << mid_time << "," << std_dev << std::endl;
+                    if (times_output) {
+                        for (auto z : times) {
+                            std::cout << z << ' ';
+                        }
+                    }
 				} else if(csvoutput) {
 					std::cout << std::setw(16) << std::get<1>(config)
 						<< std::setw(2) << ", " << std::setw(14) << std::get<0>(res)
