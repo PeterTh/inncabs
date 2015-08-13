@@ -39,7 +39,7 @@ namespace {
 		if(vec.size() == 1) return vec[0];
 		std::sort(vec.begin(), vec.end());
 		if(vec.size() % 2 == 0) {
-			return (vec[vec.size() / 2] + vec[vec.size() / 2 + 1]) / 2;
+			return (vec[vec.size() / 2 - 1] + vec[vec.size() / 2]) / 2;
 		}
 		else {
 			return vec[vec.size() / 2];
