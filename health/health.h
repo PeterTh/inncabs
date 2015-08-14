@@ -461,6 +461,92 @@ void put_in_hosp(struct Hosp *hosp, struct Patient *patient)
 	}
 }
 
+#if defined(INNCABS_USE_HPX_FUTURIZED)
+struct slist_iterator
+{
+    slist_iterator(Village *curr = 0) : curr_(curr) {}
+
+    slist_iterator& operator++()
+    {
+        curr_ = curr_->next;
+        return *this;
+    }
+    slist_iterator operator++(int)
+    {
+        slist_iterator tmp(curr_);
+        curr_ = curr_->next;
+        return tmp;
+    }
+
+    Village* operator*() const
+    {
+        return curr_;
+    }
+
+    Village *curr_;
+};
+
+bool operator==(slist_iterator const& lhs, slist_iterator const& rhs)
+{
+    return lhs.curr_ == rhs.curr_;
+}
+
+bool operator!=(slist_iterator const& lhs, slist_iterator const& rhs)
+{
+    return lhs.curr_ != rhs.curr_;
+}
+
+namespace std
+{
+    template <>
+    struct iterator_traits<slist_iterator>
+    {
+        typedef Village* value_type;
+        typedef Village* reference;
+        typedef Village* pointer;
+        typedef std::ptrdiff_t difference_type;
+        typedef forward_iterator_tag iterator_category;
+    };
+}
+
+void sim_village_par(const inncabs::launch l, struct Village *village)
+{
+//    struct Village *vlist;
+
+    // lowest level returns nothing
+    // only for sim_village first call with village = NULL
+    // recursive call cannot occurs
+    if (village == NULL) return;
+
+    std::vector<inncabs::future<void>> futures;
+    /* Traverse village hierarchy (lower level first)*/
+    using namespace hpx::parallel;
+    hpx::future<void> f = hpx::parallel::for_each(
+        par(task).on(parallel_executor(l)),
+        slist_iterator(village->forward), slist_iterator(),
+        [l](Village* curr)
+        {
+            sim_village_par(l, curr);
+        });
+
+    /* Uses lists v->hosp->inside, and v->return */
+    check_patients_inside(village);
+
+    /* Uses lists v->hosp->assess, v->hosp->inside, v->population and (v->back->hosp->realloc) !!! */
+    check_patients_assess_par(village);
+
+    /* Uses lists v->hosp->waiting, and v->hosp->assess */
+    check_patients_waiting(village);
+
+    f.wait();
+
+    /* Uses lists v->hosp->realloc, v->hosp->asses and v->hosp->waiting */
+    check_patients_realloc(village);
+
+    /* Uses list v->population, v->hosp->asses and v->h->waiting */
+    check_patients_population(village);
+}
+#else
 void sim_village_par(const inncabs::launch l, struct Village *village)
 {
 	struct Village *vlist;
@@ -499,6 +585,7 @@ void sim_village_par(const inncabs::launch l, struct Village *village)
 	/* Uses list v->population, v->hosp->asses and v->h->waiting */
 	check_patients_population(village);
 }
+#endif
 
 /**********************************************************************/
 void my_print(struct Village *village) {
