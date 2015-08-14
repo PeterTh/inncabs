@@ -177,6 +177,50 @@ void sparselu_init(float ***pBENCH, const char *pass) {
 	print_structure(pass, *pBENCH);
 }
 
+#if defined(INNCABS_USE_HPX_FUTURIZED)
+void sparselu_par_call(const inncabs::launch l, float **BENCH) {
+    using namespace hpx::parallel;
+    for(int kk=0; kk<arg_size_1; kk++) {
+        lu0(BENCH[kk*arg_size_1+kk]);
+        for(int jj=kk+1; jj<arg_size_1; jj++) {
+            std::vector<inncabs::future<void>> futures;
+            if(BENCH[kk*arg_size_1+jj] != NULL) {
+                futures.push_back(inncabs::async(l, fwd, BENCH[kk*arg_size_1+kk], BENCH[kk*arg_size_1+jj]));
+            }
+            auto r1 = boost::irange(kk+1, arg_size_1);
+            futures.push_back(hpx::parallel::for_each(
+                par(task).on(parallel_executor(l)),
+                std::begin(r1), std::end(r1),
+                [&](int ii)
+                {
+                    if(BENCH[ii*arg_size_1+kk] != NULL) {
+                        bdiv(BENCH[kk*arg_size_1+kk], BENCH[ii*arg_size_1+kk]);
+                    }
+                }));
+            hpx::wait_all(futures);
+            futures.clear();
+
+            auto r2 = boost::irange(kk+1, arg_size_1);
+            hpx::parallel::for_each(
+                par.on(parallel_executor(l)),
+                std::begin(r2), std::end(r2),
+                [&](int ii)
+                {
+                    if(BENCH[ii*arg_size_1+kk] != NULL) {
+                        for(int jj=kk+1; jj<arg_size_1; jj++) {
+                            if(BENCH[kk*arg_size_1+jj] != NULL) {
+                                if(BENCH[ii*arg_size_1+jj]==NULL) BENCH[ii*arg_size_1+jj] = allocate_clean_block();
+                                bmod(BENCH[ii*arg_size_1+kk], BENCH[kk*arg_size_1+jj], BENCH[ii*arg_size_1+jj]);
+                            }
+                        }
+                    }
+                });
+            jj += arg_size_1;
+        }
+    }
+    inncabs::message("completed!\n");
+}
+#else
 void sparselu_par_call(const inncabs::launch l, float **BENCH) {
 	for(int kk=0; kk<arg_size_1; kk++) {
 		lu0(BENCH[kk*arg_size_1+kk]);
@@ -214,6 +258,7 @@ void sparselu_par_call(const inncabs::launch l, float **BENCH) {
 	}
 	inncabs::message("completed!\n");
 }
+#endif
 
 void sparselu_seq_call(float **BENCH) {
 	for(int kk=0; kk<arg_size_1; kk++) {

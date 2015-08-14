@@ -1,6 +1,10 @@
 #if defined(INNCABS_USE_HPX)
 #include <hpx/hpx_main.hpp>
 #include <hpx/hpx.hpp>
+#if defined(INNCABS_USE_HPX_FUTURIZED)
+#include <hpx/include/parallel_for_each.hpp>
+#include <hpx/include/parallel_executor_parameters.hpp>
+#endif
 #endif
 
 #include "../include/inncabs.h"
