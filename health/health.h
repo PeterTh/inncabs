@@ -518,12 +518,14 @@ void sim_village_par(const inncabs::launch l, struct Village *village)
     // recursive call cannot occurs
     if (village == NULL) return;
 
+    std::size_t len = std::distance(slist_iterator(village->forward), slist_iterator());
     std::vector<inncabs::future<void>> futures;
+
     /* Traverse village hierarchy (lower level first)*/
     using namespace hpx::parallel;
-    hpx::future<void> f = hpx::parallel::for_each(
+    hpx::future<void> f = hpx::parallel::for_each_n(
         par(task).on(parallel_executor(l)),
-        slist_iterator(village->forward), slist_iterator(),
+        slist_iterator(village->forward), len,
         [l](Village* curr)
         {
             sim_village_par(l, curr);
