@@ -199,9 +199,6 @@ namespace inncabs {
 				for(unsigned i = 0; i < repeats; ++i) {
 					res = benchmark(x, c, std::get<0>(config), initializer);
 					times.push_back(std::get<1>(res));
-#if defined(INNCABS_USE_HPX)
-                    hpx::evaluate_active_counters(true);
-#endif
 				}
 				long long mid_time = median(times);
 				double std_dev = stddev(times);
