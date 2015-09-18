@@ -17,15 +17,19 @@ if(MSVC)
 endif()
 
 ################################################################################
+# Commented the following out,  
+#     should work if CMAKE_PREFIX_PATH is set to include 
+#     hpx build or install directory
+
 # Find and include HPX settings
-if(NOT HPX_ROOT)
-  if(NOT $ENV{HPX_ROOT} STREQUAL "")
-      set(HPX_ROOT $ENV{HPX_ROOT})
-  endif()
-endif()
-if(NOT HPX_ROOT)
-  message(FATAL_ERROR "HPX_ROOT not set, unable to find hpx!")
-endif()
+#if(NOT HPX_ROOT)
+#  if(NOT $ENV{HPX_ROOT} STREQUAL "")
+#      set(HPX_ROOT $ENV{HPX_ROOT})
+#  endif()
+#endif()
+#if(NOT HPX_ROOT)
+#  message(FATAL_ERROR "HPX_ROOT not set, unable to find hpx!")
+#endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${HPX_ROOT}/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules)
 
