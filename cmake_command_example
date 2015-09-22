@@ -1,6 +1,6 @@
 #-DCMAKE_COMPILER=clang++ \ 
 
-cmake -DCMAKE_PREFIX=<hpx build directory> \
+cmake -DCMAKE_PREFIX_PATH=<hpx build directory> \
       -DCMAKE_BUILD_TYPE=Release \
       <hpx inncabs source>
 
