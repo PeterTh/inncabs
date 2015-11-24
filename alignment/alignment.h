@@ -11,7 +11,7 @@ double tracepath(int tsb1, int tsb2, int *print_ptr, int *displ, int seq1, int s
 
 void init_matrix(void);
 std::string pairalign_init(const char *filename);
-int pairalign();
+int pairalign(const inncabs::launch l);
 int pairalign_seq();
 void align_init();
 void align();
@@ -129,8 +129,8 @@ int get_matrix(int *matptr, int *xref, int scale) {
 
 void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *maxscore, int g, int gh) {
 	int i, j, f, p, t, hh;
-	int HH[MAX_ALN_LENGTH];
-	int DD[MAX_ALN_LENGTH];
+	int * HH = new int[MAX_ALN_LENGTH];
+	int * DD = new int[MAX_ALN_LENGTH];
 
 	*maxscore  = 0;
 	*se1 = 0;
@@ -165,12 +165,15 @@ void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *max
 			if (hh > *maxscore) {*maxscore = hh; *se1 = i; *se2 = j;}
 		}
 	}
+    
+    delete[] HH;
+    delete[] DD;
 }
 
 void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int maxscore, int g, int gh) {
 	int i, j, f, p, t, hh, cost;
-	int HH[MAX_ALN_LENGTH];
-	int DD[MAX_ALN_LENGTH];
+	int * HH = new int[MAX_ALN_LENGTH];
+	int * DD = new int[MAX_ALN_LENGTH];
 
 	cost = 0;
 	*sb1  = 1;
@@ -208,15 +211,17 @@ void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int 
 
 		if (cost >= maxscore) break;
 	}
+    delete[] HH;
+    delete[] DD;
 }
 
 int diff(int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_print, int *displ, int seq1, int seq2, int g, int gh) {
 	int i, j, f, e, s, t, hh;
 	int midi, midj, midh, type;
-	int HH[MAX_ALN_LENGTH];
-	int DD[MAX_ALN_LENGTH];
-	int RR[MAX_ALN_LENGTH];
-	int SS[MAX_ALN_LENGTH];
+	int * HH = new int[MAX_ALN_LENGTH];
+	int * DD = new int[MAX_ALN_LENGTH];
+	int * RR = new int[MAX_ALN_LENGTH];
+	int * SS = new int[MAX_ALN_LENGTH];
 
 	if (N <= 0) {if (M > 0) del(M, print_ptr, last_print, displ); return( - (int) tbgap(M)); }
 
@@ -349,6 +354,10 @@ int diff(int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_p
 		diff(A+midi+1, B+midj, M-midi-1, N-midj, 0, te, print_ptr, last_print, displ, seq1, seq2, g, gh);
 	}
 
+    delete[] HH;
+    delete[] DD;
+    delete[] RR;
+    delete[] SS;
 	return midh;
 }
 
@@ -410,7 +419,7 @@ int pairalign(const inncabs::launch l) {
 			} else {
 				futures.push_back( inncabs::async(l, [&,i,m,n,si,sj,len1]() mutable {
 					int se1, se2, sb1, sb2, maxscore, seq1, seq2, g, gh, len2;
-					int displ[2*MAX_ALN_LENGTH+1];
+					int * displ = new int[2*MAX_ALN_LENGTH+1];
 					int print_ptr, last_print;
 
 					for (i = 1, len2 = 0; i <= m; i++) {
@@ -442,6 +451,7 @@ int pairalign(const inncabs::launch l) {
 					else                        mm_score /= (double) MIN(len1,len2);
 
 					bench_output[si*nseqs+sj] = (int) mm_score;
+                    delete[] displ;
 				} ) ); // end async
 			} // end if (n == 0 || m == 0)
 		} // for (j)
