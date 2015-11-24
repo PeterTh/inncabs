@@ -54,6 +54,7 @@ set(subdirs
     intersim
     nqueens
     pyramids
+    qap
     round
     sort
     sparselu
