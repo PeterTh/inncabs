@@ -171,8 +171,8 @@ void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *max
 
 void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int maxscore, int g, int gh) {
 	int i, j, f, p, t, hh, cost;
-    std::unique_ptr<int[]> HH = std::make_unique<int[]>(MAX_ALN_LENGTH);
-    std::unique_ptr<int[]> DD = std::make_unique<int[]>(MAX_ALN_LENGTH);
+    std::vector<int> HH(MAX_ALN_LENGTH);
+    std::vector<int> DD(MAX_ALN_LENGTH);
 
 	cost = 0;
 	*sb1  = 1;
@@ -215,10 +215,10 @@ void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int 
 int diff(int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_print, int *displ, int seq1, int seq2, int g, int gh) {
 	int i, j, f, e, s, t, hh;
 	int midi, midj, midh, type;
-    std::unique_ptr<int[]> HH = std::make_unique<int[]>(MAX_ALN_LENGTH);
-    std::unique_ptr<int[]> DD = std::make_unique<int[]>(MAX_ALN_LENGTH);
-    std::unique_ptr<int[]> RR = std::make_unique<int[]>(MAX_ALN_LENGTH);
-    std::unique_ptr<int[]> SS = std::make_unique<int[]>(MAX_ALN_LENGTH);
+    std::vector<int> HH(MAX_ALN_LENGTH);
+    std::vector<int> DD(MAX_ALN_LENGTH);
+    std::vector<int> RR(MAX_ALN_LENGTH);
+    std::vector<int> SS(MAX_ALN_LENGTH);
 
 	if (N <= 0) {if (M > 0) del(M, print_ptr, last_print, displ); return( - (int) tbgap(M)); }
 
