@@ -412,7 +412,7 @@ int pairalign(const inncabs::launch l) {
 			} else {
 				futures.push_back( inncabs::async(l, [&,i,m,n,si,sj,len1]() mutable {
 					int se1, se2, sb1, sb2, maxscore, seq1, seq2, g, gh, len2;
-                    std::unique_ptr<int[]> displ = std::make_unique<int[]>(2*MAX_ALN_LENGTH+1);
+                    std::vector<int> displ((2 * MAX_ALN_LENGTH) + 1);
 					int print_ptr, last_print;
 
 					for (i = 1, len2 = 0; i <= m; i++) {
@@ -437,8 +437,8 @@ int pairalign(const inncabs::launch l) {
 					print_ptr  = 1;
 					last_print = 0;
 
-					diff(sb1-1, sb2-1, se1-sb1+1, se2-sb2+1, 0, 0, &print_ptr, &last_print, displ.get(), seq1, seq2, g, gh);
-					double mm_score = tracepath(sb1, sb2, &print_ptr, displ.get(), seq1, seq2);
+					diff(sb1-1, sb2-1, se1-sb1+1, se2-sb2+1, 0, 0, &print_ptr, &last_print, displ.data(), seq1, seq2, g, gh);
+					double mm_score = tracepath(sb1, sb2, &print_ptr, displ.data(), seq1, seq2);
 
 					if (len1 == 0 || len2 == 0) mm_score  = 0.0;
 					else                        mm_score /= (double) MIN(len1,len2);
@@ -481,7 +481,7 @@ int pairalign_seq() {
 				seq_output[si*nseqs+sj] = (int) 1.0;
 			} else {
 				int se1, se2, sb1, sb2, maxscore, seq1, seq2, g, gh;
-				int displ[2*MAX_ALN_LENGTH+1];
+                std::vector<int> displ((2 * MAX_ALN_LENGTH) + 1);
 				int print_ptr, last_print;
 
 				for (i = 1, len2 = 0; i <= m; i++) {
@@ -506,8 +506,8 @@ int pairalign_seq() {
 				print_ptr  = 1;
 				last_print = 0;
 
-				diff(sb1-1, sb2-1, se1-sb1+1, se2-sb2+1, 0, 0, &print_ptr, &last_print, displ, seq1, seq2, g, gh);
-				mm_score = tracepath(sb1, sb2, &print_ptr, displ, seq1, seq2);
+				diff(sb1-1, sb2-1, se1-sb1+1, se2-sb2+1, 0, 0, &print_ptr, &last_print, displ.data(), seq1, seq2, g, gh);
+				mm_score = tracepath(sb1, sb2, &print_ptr, displ.data(), seq1, seq2);
 
 				if (len1 == 0 || len2 == 0) mm_score  = 0.0;
 				else                        mm_score /= (double) MIN(len1,len2);
