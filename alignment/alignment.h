@@ -1,6 +1,6 @@
 #pragma once
 
-#include <memory>
+#include <vector>
 
 void del(int k, int *print_ptr, int *last_print, int *displ);
 void add(int v, int *print_ptr, int *last_print, int *displ);
@@ -131,8 +131,8 @@ int get_matrix(int *matptr, int *xref, int scale) {
 
 void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *maxscore, int g, int gh) {
 	int i, j, f, p, t, hh;
-    std::unique_ptr<int[]> HH = std::make_unique<int[]>(MAX_ALN_LENGTH);
-    std::unique_ptr<int[]> DD = std::make_unique<int[]>(MAX_ALN_LENGTH);
+    std::vector<int> HH(MAX_ALN_LENGTH);
+    std::vector<int> DD(MAX_ALN_LENGTH);
 
 	*maxscore  = 0;
 	*se1 = 0;
