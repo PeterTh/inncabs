@@ -209,9 +209,8 @@ namespace inncabs {
 					std::cout << mid_time << "," << std_dev << std::endl;
                     if (times_output) {
                         for (auto z : times) {
-                            std::cout << z << ' ';
+                            std::cerr << z << std::endl;
                         }
-                        std::cout << std::endl;
                     }
 				} else if(csvoutput) {
 					std::cout << std::setw(16) << std::get<1>(config)
