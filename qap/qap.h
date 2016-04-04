@@ -1,5 +1,7 @@
 #pragma once
 
+#include "parec/core.h"
+
 /*
  Adapted from the Insieme compiler "qap" test case.
  Copyright 2012-2014 University of Innsbruck
@@ -35,9 +37,9 @@ void qap_del(problem* problem) {
 	free(problem);
 }
 
-#define get(M,I,J) M->data[I*M->size+J]
-#define getA(P,I,J) get(P->A,I,J)
-#define getB(P,I,J) get(P->B,I,J)
+#define getM(M,I,J) M->data[I*M->size+J]
+#define getA(P,I,J) getM(P->A,I,J)
+#define getB(P,I,J) getM(P->B,I,J)
 
 
 // a struct representing a (partial) solution to the problem
@@ -54,69 +56,92 @@ void print(solution* solution) {
 	printf("-%d", solution->pos);
 }
 
-int solve_rec(const std::launch l, problem* problem, solution* partial, int plant, int used_mask, int cur_cost, std::atomic<int>& best_known) {
-	// terminal case
-	if(plant >= problem->size) {
-		return cur_cost;
-	}
+struct params {
+	problem* problem_;
+	solution* partial;
+	int plant;
+	int used_mask;
+	int cur_cost;
+	std::atomic<int>& best_known;
+};
+
+
+template<typename T>
+int solve_rec_step(const params& p, const T& rec_call) {
+	problem* problem = p.problem_;
+	solution* partial = p.partial;
+	int plant = p.plant;
+	int used_mask = p.used_mask;
+	int cur_cost = p.cur_cost;
+	std::atomic<int>& best_known = p.best_known;
 
 	if(cur_cost >= best_known) {
 		return best_known;
 	}
 
-	std::vector<std::future<void>> futures;
+	std::vector<decltype(rec_call(p))> futures;
+
+	solution tmp[problem->size];
 
 	// fix current position
 	for(int i=0; i<problem->size; i++) {
 		// check whether current spot is a free spot
-		futures.push_back(std::async(l, [=, &best_known]() {
-			if(!(1<<i & used_mask)) {
-				// extend solution
-				solution tmp = {partial, i};
+		if(!(1<<i & used_mask)) {
+			// extend solution
+			tmp[i] = {partial, i};
 
-				// compute additional cost of current assignment
-				int new_cost = 0;
+			// compute additional cost of current assignment
+			int new_cost = 0;
 
-				int cur_plant = plant;
-				solution* cur = &tmp;
-				while(cur) {
-					int other_pos = cur->pos;
+			int cur_plant = plant;
+			solution* cur = &tmp[i];
+			while(cur) {
+				int other_pos = cur->pos;
 
-					// add costs between current pair of plants
-					new_cost += getA(problem, plant, cur_plant) * getB(problem, i, other_pos);
-					new_cost += getA(problem, cur_plant, plant) * getB(problem, other_pos, i);
+				// add costs between current pair of plants
+				new_cost += getA(problem, plant, cur_plant) * getB(problem, i, other_pos);
+				new_cost += getA(problem, cur_plant, plant) * getB(problem, other_pos, i);
 
-					// go to next plant
-					cur = cur->head;
-					cur_plant--;
-				}
+				// go to next plant
+				cur = cur->head;
+				cur_plant--;
+			}
 
-				// compute recursive rest
-				int cur_best = solve_rec(l, problem, &tmp, plant+1, used_mask | (1<<i), cur_cost + new_cost, best_known);
-
-				// update best known solution
-				if(cur_best < best_known) {
-					int best;
-					//   |--- read best ---|         |--- check ---|    |------- update if cur_best is better ------------|
-					do { best = best_known; } while (cur_best < best && best_known.compare_exchange_strong(best, cur_best));
-				}
-			} 
-		}));
+			// compute recursive rest
+			futures.push_back(rec_call({problem, &tmp[i], plant+1, used_mask | (1<<i), cur_cost + new_cost, best_known}));
+		}
 	}
 
 	for(auto& f : futures) {
-		f.wait();
+		auto cur_best = f.get();
+		// update best known solution
+		if(cur_best < best_known) {
+			int best;
+			//   |--- read best ---|         |--- check ---|    |------- update if cur_best is better ------------|
+			do { best = best_known; } while (cur_best < best && best_known.compare_exchange_strong(best, cur_best));
+		}
 	}
 
 	return best_known;
 }
 
 int solve(const std::launch l, problem* problem) {
-	int res;
 	solution* map = empty();
 	std::atomic<int> best{ 1 << 30 };
-	res = solve_rec(l, problem, map, 0, 0, 0, best);
-	return res;
+
+	auto rec_solver = parec::prec(
+		[](const params& p){
+			return p.plant >= p.problem_->size;
+		},
+		[](const params& p) {
+			return p.cur_cost;
+		},
+		[](const params& p, const auto& rec_call) {
+			return solve_rec_step(p, rec_call);
+		}
+	);
+
+	return rec_solver({problem, map, 0, 0, 0, best}).get();
 }
 
 problem* qap_load(const char* file) {

@@ -1,14 +1,22 @@
 #include "../include/inncabs.h"
 
+#include "parec/core.h"
+
 typedef long long ll;
 
-ll fib(int n, const std::launch l) {
-	if(n < 2) return n;
+ll fib(ll n, const std::launch l) {
 
-	auto x = std::async(l, fib, n - 1, l);
-	auto y = std::async(l, fib, n - 2, l);
+	auto parec_fib = parec::prec(
+		[](ll n) { return n<2; },
+		[](ll n) { return n; },
+		[](ll n, const auto& fib) {
+			auto x = fib(n-1);
+			auto y = fib(n-2);
+			return x.get() + y.get();
+		}
+	);
 
-	return x.get() + y.get();
+	return parec_fib(n).get();
 }
 
 static const ll FIB_RESULTS_PRE = 41;
@@ -29,6 +37,6 @@ int main(int argc, char** argv) {
 	inncabs::run_all(
 		[n](const std::launch l) { return fib(n, l); },
 		[n](ll result) { return result == fib_verify_value(n); },
-		ss.str() 
+		ss.str()
 		);
 }

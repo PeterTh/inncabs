@@ -3,7 +3,7 @@
 /*
  * Based on the Barcelona OpenMP Tasks Suite "floorplan" benchmark
  * Copyright (C) 2009 Barcelona Supercomputing Center - Centro Nacional de Supercomputacion
- * Copyright (C) 2009 Universitat Politecnica de Catalunya                                   
+ * Copyright (C) 2009 Universitat Politecnica de Catalunya
  * Original code from the Cilk project
  * Copyright (c) 1996 Massachusetts Institute of Technology
  */
@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	REAL *D = alloc_matrix(arg_size);
 
 	std::stringstream ss;
-	ss << "Strassen Algorithm (" << arg_size << " x " << arg_size 
+	ss << "Strassen Algorithm (" << arg_size << " x " << arg_size
 		<< " matrix with cutoff " << arg_cutoff_value << ") ";
 
 	init_matrix(arg_size, A, arg_size);

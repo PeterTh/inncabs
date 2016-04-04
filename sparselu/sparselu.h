@@ -1,5 +1,7 @@
 #pragma once
 
+#include "parec/async.h"
+
 #define EPSILON 1.0E-6
 
 int arg_size_1, arg_size_2;
@@ -14,9 +16,9 @@ void bdiv(float *diag, float *row);
 void bmod(float *row, float *col, float *inner);
 void fwd(float *diag, float *col);
 
-void sparselu_init(float ***pBENCH, const char *pass); 
+void sparselu_init(float ***pBENCH, const char *pass);
 void sparselu(float **BENCH);
-void sparselu_fini(float **BENCH, const char *pass); 
+void sparselu_fini(float **BENCH, const char *pass);
 
 void sparselu_seq_call(float **BENCH);
 void sparselu_par_call(const std::launch t, float **BENCH);
@@ -42,15 +44,15 @@ bool checkmat(float *M, float *N) {
 
 			if(M[i*arg_size_2+j] == 0) {
 				std::stringstream ss;
-				ss << "Checking failure: A[" << i << "][" << j << "]=" << M[i*arg_size_2+j] 
+				ss << "Checking failure: A[" << i << "][" << j << "]=" << M[i*arg_size_2+j]
 				<< "  B[" << i << "][" << j << "]=" << N[i*arg_size_2+j] << "; \n";
 				inncabs::message(ss.str());
 				return false;
-			}  
+			}
 			r_err = r_err / M[i*arg_size_2+j];
 			if(r_err > EPSILON) {
 				std::stringstream ss;
-				ss << "Checking failure: A[" << i << "][" << j << "]=" << M[i*arg_size_2+j] 
+				ss << "Checking failure: A[" << i << "][" << j << "]=" << M[i*arg_size_2+j]
 				<< "  B[" << i << "][" << j << "]=" << N[i*arg_size_2+j] << "; \n"
 					<< "; Relative Error=" << r_err << "\n";
 				inncabs::message(ss.str());
@@ -78,7 +80,7 @@ void genmat(float *M[]) {
 			if(jj%2==1) null_entry = TRUE;
 			if(ii==jj) null_entry = FALSE;
 			if(ii==jj-1) null_entry = FALSE;
-			if(ii-1 == jj) null_entry = FALSE; 
+			if(ii-1 == jj) null_entry = FALSE;
 			/* allocating matrix */
 			if(null_entry == FALSE){
 				M[ii*arg_size_1+jj] = (float *) malloc(arg_size_2*arg_size_2*sizeof(float));
@@ -124,8 +126,8 @@ float* allocate_clean_block() {
 	q = p;
 	if(p!=NULL) {
 		for(i = 0; i < arg_size_2; i++) {
-			for(j = 0; j < arg_size_2; j++) { 
-				(*p)=0.0; 
+			for(j = 0; j < arg_size_2; j++) {
+				(*p)=0.0;
 				p++;
 			}
 		}
@@ -165,7 +167,7 @@ void bmod(float *row, float *col, float *inner) {
 
 void fwd(float *diag, float *col) {
 	for(int j=0; j<arg_size_2; j++)
-		for(int k=0; k<arg_size_2; k++) 
+		for(int k=0; k<arg_size_2; k++)
 			for(int i=k+1; i<arg_size_2; i++)
 				col[i*arg_size_2+j] = col[i*arg_size_2+j] - diag[i*arg_size_2+k]*col[k*arg_size_2+j];
 }
@@ -181,17 +183,17 @@ void sparselu_par_call(const std::launch l, float **BENCH) {
 	for(int kk=0; kk<arg_size_1; kk++) {
 		lu0(BENCH[kk*arg_size_1+kk]);
 		for(int jj=kk+1; jj<arg_size_1; jj++) {
-			std::vector<std::future<void>> futures;
+			std::vector<parec::utils::runtime::Future<void>> futures;
 			if(BENCH[kk*arg_size_1+jj] != NULL) {
-				futures.push_back(std::async(l, fwd, BENCH[kk*arg_size_1+kk], BENCH[kk*arg_size_1+jj]));
+				futures.push_back(parec::async([=]{ fwd(BENCH[kk*arg_size_1+kk], BENCH[kk*arg_size_1+jj]); }));
 			}
 			for(int ii=kk+1; ii<arg_size_1; ii++) {
 				if(BENCH[ii*arg_size_1+kk] != NULL)	{
-					futures.push_back(std::async(l, bdiv, BENCH[kk*arg_size_1+kk], BENCH[ii*arg_size_1+kk]));
+					futures.push_back(parec::async([=]{ bdiv(BENCH[kk*arg_size_1+kk], BENCH[ii*arg_size_1+kk]); }));
 				}
 			}
 			for(auto& f : futures) {
-				f.wait();
+				f.get();
 			}
 			futures.clear();
 
@@ -199,7 +201,7 @@ void sparselu_par_call(const std::launch l, float **BENCH) {
 				if(BENCH[ii*arg_size_1+kk] != NULL) {
 					for(jj=kk+1; jj<arg_size_1; jj++) {
 						if(BENCH[kk*arg_size_1+jj] != NULL)	{
-							futures.push_back(std::async(l, [=]() {
+							futures.push_back(parec::async([=]() {
 								if(BENCH[ii*arg_size_1+jj]==NULL) BENCH[ii*arg_size_1+jj] = allocate_clean_block();
 								bmod(BENCH[ii*arg_size_1+kk], BENCH[kk*arg_size_1+jj], BENCH[ii*arg_size_1+jj]);
 							} ) );
@@ -208,7 +210,7 @@ void sparselu_par_call(const std::launch l, float **BENCH) {
 				}
 			}
 			for(auto& f : futures) {
-				f.wait();
+				f.get();
 			}
 		}
 	}

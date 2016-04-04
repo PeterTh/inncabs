@@ -2,7 +2,7 @@
 
 #include "qap.h"
 
-int main(int argc, char** argv) {	
+int main(int argc, char** argv) {
 	const char* problem_file = argc>1 ? argv[1] : "input/qap/chr10a.dat";
 
 	// load problem

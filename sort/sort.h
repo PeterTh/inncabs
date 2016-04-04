@@ -12,7 +12,7 @@
 *
 *
 * The procedure cilkmerge does the following:
-*       
+*
 *       cilkmerge(A[1..n], B[1..m], C[1..(n+m)]) =
 *          find the median of A \union B using binary
 *          search.  The binary search gives a pair
@@ -38,20 +38,22 @@
 
 #include "../include/inncabs.h"
 
+#include "parec/core.h"
+
 #include <cstring>
 
 typedef long ELM;
 
-void seqquick(ELM *low, ELM *high); 
+void seqquick(ELM *low, ELM *high);
 void seqmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest);
-ELM *binsplit(ELM val, ELM *low, ELM *high); 
+ELM *binsplit(ELM val, ELM *low, ELM *high);
 void cilkmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest);
 void cilkmerge_par(const std::launch l, ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest);
 void cilksort(ELM *low, ELM *tmp, long size);
 void cilksort_par(const std::launch l, ELM *low, ELM *tmp, long size);
-void scramble_array(ELM *array); 
-void fill_array(ELM *array); 
-void sort(); 
+void scramble_array(ELM *array);
+void fill_array(ELM *array);
+void sort();
 
 void sort_par(const std::launch l);
 void sort_init();
@@ -106,7 +108,7 @@ void seqmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest) {
 	* loading an element out of range.  While this is
 	* probably not a problem in practice, yet I don't feel
 	* comfortable with an incorrect algorithm.  Therefore,
-	* I use the 'fast' loop on the array (except for the last 
+	* I use the 'fast' loop on the array (except for the last
 	* element) and the 'slow' loop for the rest, saving both
 	* performance and correctness.
 	*/
@@ -183,65 +185,93 @@ ELM *binsplit(ELM val, ELM *low, ELM *high) {
 		return low;
 }
 
-void cilkmerge_par(const std::launch l, ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest) {
+
+
+
+struct merge_params {
+	ELM *low1, *high1, *low2, *high2, *lowdest;
+};
+
+template<typename MergeFun>
+void cilkmerge_par_step(const merge_params& p, const MergeFun& merge) {
+
+	ELM* low1 = p.low1;
+	ELM* low2 = p.low2;
+	ELM* high1 = p.high1;
+	ELM* high2 = p.high2;
+	ELM* lowdest = p.lowdest;
+
 	/*
-	* Cilkmerge: Merges range [low1, high1] with range [low2, high2] 
-	* into the range [lowdest, ...]  
+	* Cilkmerge: Merges range [low1, high1] with range [low2, high2]
+	* into the range [lowdest, ...]
 	*/
 
 	ELM *split1, *split2;	/*
-							* where each of the ranges are broken for 
-							* recursive merge 
+							* where each of the ranges are broken for
+							* recursive merge
 							*/
 	long int lowsize;		/*
 							* total size of lower halves of two
-							* ranges - 2 
+							* ranges - 2
 							*/
 
 	/*
 	* We want to take the middle element (indexed by split1) from the
 	* larger of the two arrays.  The following code assumes that split1
 	* is taken from range [low1, high1].  So if [low1, high1] is
-	* actually the smaller range, we should swap it with [low2, high2] 
+	* actually the smaller range, we should swap it with [low2, high2]
 	*/
 
 	if(high2 - low2 > high1 - low1) {
 		swap_indices(low1, low2);
 		swap_indices(high1, high2);
 	}
-	if(high2 < low2) {
-		/* smaller range is empty */
-		memcpy(lowdest, low1, sizeof(ELM) * (high1 - low1));
-		return;
-	}
-	if(high2 - low2 < arg_cutoff_1 ) {
-		seqmerge(low1, high1, low2, high2, lowdest);
-		return;
-	}
+//	if(high2 < low2) {
+//		/* smaller range is empty */
+//		memcpy(lowdest, low1, sizeof(ELM) * (high1 - low1));
+//		return;
+//	}
+//	if(high2 - low2 < arg_cutoff_1 ) {
+//		seqmerge(low1, high1, low2, high2, lowdest);
+//		return;
+//	}
+
 	/*
 	* Basic approach: Find the middle element of one range (indexed by
 	* split1). Find where this element would fit in the other range
 	* (indexed by split 2). Then merge the two lower halves and the two
-	* upper halves. 
+	* upper halves.
 	*/
 
 	split1 = ((high1 - low1 + 1) / 2) + low1;
 	split2 = binsplit(*split1, low2, high2);
 	lowsize = split1 - low1 + split2 - low2;
 
-	/* 
+	/*
 	* directly put the splitting element into
 	* the appropriate location
 	*/
 	*(lowdest + lowsize + 1) = *split1;
-	std::future<void> f1 = std::async(l, cilkmerge_par, l, low1, split1 - 1, low2, split2, lowdest);
-	std::future<void> f2 = std::async(l, cilkmerge_par, l, split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2);
-	f1.wait();
-	f2.wait();
+	auto f1 = merge({low1, split1 - 1, low2, split2, lowdest});
+	auto f2 = merge({split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2});
+	f1.get();
+	f2.get();
 	return;
 }
 
-void cilksort_par(const std::launch l, ELM *low, ELM *tmp, long size) {
+struct sort_params {
+	ELM* low;
+	ELM* tmp;
+	long size;
+};
+
+template<typename SortFun, typename MergeFun>
+void cilksort_par_step(const sort_params& p, const SortFun& sort, const MergeFun& merge) {
+
+	ELM* low = p.low;
+	ELM* tmp = p.tmp;
+	long size = p.size;
+
 	/*
 	* divide the input in four parts of the same size (A, B, C, D)
 	* Then:
@@ -266,21 +296,73 @@ void cilksort_par(const std::launch l, ELM *low, ELM *tmp, long size) {
 	D = C + quarter;
 	tmpD = tmpC + quarter;
 
-	std::future<void> f1 = std::async(l, cilksort_par, l, A, tmpA, quarter);
-	std::future<void> f2 = std::async(l, cilksort_par, l, B, tmpB, quarter);
-	std::future<void> f3 = std::async(l, cilksort_par, l, C, tmpC, quarter);
-	std::future<void> f4 = std::async(l, cilksort_par, l, D, tmpD, size - 3 * quarter);
-	f1.wait();
-	f2.wait();
-	f3.wait();
-	f4.wait();
+	auto f1 = sort({A, tmpA, quarter});
+	auto f2 = sort({B, tmpB, quarter});
+	auto f3 = sort({C, tmpC, quarter});
+	auto f4 = sort({D, tmpD, size - 3 * quarter});
+	f1.get();
+	f2.get();
+	f3.get();
+	f4.get();
 
-	std::future<void> f5 = std::async(l, cilkmerge_par, l, A, A + quarter - 1, B, B + quarter - 1, tmpA);
-	std::future<void> f6 = std::async(l, cilkmerge_par, l, C, C + quarter - 1, D, low + size - 1, tmpC);
-	f5.wait();
-	f6.wait();
+	auto f5 = merge({A, A + quarter - 1, B, B + quarter - 1, tmpA});
+	auto f6 = merge({C, C + quarter - 1, D, low + size - 1, tmpC});
+	f5.get();
+	f6.get();
 
-	cilkmerge_par(l, tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
+	merge({tmpA, tmpC - 1, tmpC, tmpA + size - 1, A}).get();
+}
+
+void cilksort_par(const std::launch l, ELM *low, ELM *tmp, long size) {
+
+
+	auto rec_qsort = parec::prec(
+		parec::fun(													// quick sort
+			[](const sort_params& p) {
+				return p.size < arg_cutoff_2;
+			},
+			[](const sort_params& p) {
+				qsort(p.low, p.size, sizeof(ELM), &cmpfunc);
+			},
+			[](const sort_params& p, const auto& sort, const auto& merge) {
+				cilksort_par_step(p,sort,merge);
+			}
+		),
+		parec::fun(													// merge step
+			[](const merge_params& p) {
+
+				ELM* low1 = p.low1;
+				ELM* low2 = p.low2;
+				ELM* high1 = p.high1;
+				ELM* high2 = p.high2;
+				ELM* lowdest = p.lowdest;
+
+				if(high2 - low2 > high1 - low1) {
+					swap_indices(low1, low2);
+					swap_indices(high1, high2);
+				}
+				if(high2 < low2) {
+					/* smaller range is empty */
+					memcpy(lowdest, low1, sizeof(ELM) * (high1 - low1));
+					return true;
+				}
+				if(high2 - low2 < arg_cutoff_1 ) {
+					seqmerge(low1, high1, low2, high2, lowdest);
+					return true;
+				}
+
+				return false;
+			},
+			[](const merge_params& p) { },
+			[](const merge_params& p, const auto&, const auto& merge) {
+				cilkmerge_par_step(p,merge);
+			}
+		)
+	);
+
+	// run sorting ...
+	rec_qsort({ low, tmp, size}).get();
+
 }
 
 void scramble_array(ELM *array) {

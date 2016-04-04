@@ -32,6 +32,8 @@
 
 #include <mutex>
 
+#include "parec/core.h"
+
 /* random defines */
 #define IA 16807
 #define IM 2147483647
@@ -170,12 +172,12 @@ void addList(struct Patient **list, struct Patient *patient) {
 	else
 	{
 		struct Patient *aux = *list;
-		while (aux->forward != NULL) aux = aux->forward; 
+		while (aux->forward != NULL) aux = aux->forward;
 		aux->forward = patient;
 		patient->back = aux;
 		patient->forward = NULL;
 	}
-} 
+}
 void removeList(struct Patient **list, struct Patient *patient) {
 	if (patient->back != NULL) patient->back->forward = patient->forward;
 	else *list = patient->forward;
@@ -183,7 +185,7 @@ void removeList(struct Patient **list, struct Patient *patient) {
 }
 
 /**********************************************************************/
-void allocate_village( struct Village **capital, struct Village *back, struct Village *next, int level, int32_t vid) { 
+void allocate_village( struct Village **capital, struct Village *back, struct Village *next, int level, int32_t vid) {
 	int i, population, personnel;
 	struct Village *current = NULL, *inext;
 	struct Patient *patient;
@@ -210,7 +212,7 @@ void allocate_village( struct Village **capital, struct Village *back, struct Vi
 			patient->hosps_visited = 0;
 			patient->time          = 0;
 			patient->time_left     = 0;
-			patient->home_village = *capital; 
+			patient->home_village = *capital;
 			addList(&((*capital)->population), patient);
 		}
 		/* Initialize Hospital */
@@ -271,51 +273,51 @@ struct Results get_results(struct Village *village)
 
 	// Patients in the village
 	p = village->population;
-	while (p != NULL) 
+	while (p != NULL)
 	{
 		t_res.total_patients   += 1;
 		t_res.total_in_village += 1;
 		t_res.total_hosps_v    += p->hosps_visited;
-		t_res.total_time       += p->time; 
-		p = p->forward; 
+		t_res.total_time       += p->time;
+		p = p->forward;
 	}
 	// Patients in hospital: waiting
 	p = village->hosp.waiting;
-	while (p != NULL) 
+	while (p != NULL)
 	{
 		t_res.total_patients += 1;
 		t_res.total_waiting  += 1;
 		t_res.total_hosps_v  += p->hosps_visited;
-		t_res.total_time     += p->time; 
-		p = p->forward; 
+		t_res.total_time     += p->time;
+		p = p->forward;
 	}
 	// Patients in hospital: assess
 	p = village->hosp.assess;
-	while (p != NULL) 
+	while (p != NULL)
 	{
 		t_res.total_patients += 1;
 		t_res.total_assess   += 1;
 		t_res.total_hosps_v  += p->hosps_visited;
-		t_res.total_time     += p->time; 
-		p = p->forward; 
+		t_res.total_time     += p->time;
+		p = p->forward;
 	}
 	// Patients in hospital: inside
 	p = village->hosp.inside;
-	while (p != NULL) 
+	while (p != NULL)
 	{
 		t_res.total_patients += 1;
 		t_res.total_inside   += 1;
 		t_res.total_hosps_v  += p->hosps_visited;
-		t_res.total_time     += p->time; 
-		p = p->forward; 
-	}  
+		t_res.total_time     += p->time;
+		p = p->forward;
+	}
 
-	return t_res; 
+	return t_res;
 }
 /**********************************************************************/
 /**********************************************************************/
 /**********************************************************************/
-void check_patients_inside(struct Village *village) 
+void check_patients_inside(struct Village *village)
 {
 	struct Patient *list = village->hosp.inside;
 	struct Patient *p;
@@ -323,38 +325,38 @@ void check_patients_inside(struct Village *village)
 	while (list != NULL)
 	{
 		p = list;
-		list = list->forward; 
+		list = list->forward;
 		p->time_left--;
-		if (p->time_left == 0) 
+		if (p->time_left == 0)
 		{
 			village->hosp.free_personnel++;
-			removeList(&(village->hosp.inside), p); 
-			addList(&(village->population), p); 
-		}    
+			removeList(&(village->hosp.inside), p);
+			addList(&(village->population), p);
+		}
 	}
 }
 /**********************************************************************/
-void check_patients_assess_par(struct Village *village) 
+void check_patients_assess_par(struct Village *village)
 {
 	struct Patient *list = village->hosp.assess;
 	float rand;
 	struct Patient *p;
 
-	while (list != NULL) 
+	while (list != NULL)
 	{
 		p = list;
-		list = list->forward; 
+		list = list->forward;
 		p->time_left--;
 
-		if (p->time_left == 0) 
-		{ 
+		if (p->time_left == 0)
+		{
 			rand = my_rand(&(p->seed));
 			/* sim_covalescense_p % */
 			if (rand < sim_convalescence_p)
 			{
 				rand = my_rand(&(p->seed));
 				/* !sim_realloc_p % or root hospital */
-				if (rand > sim_realloc_p || village->level == sim_level) 
+				if (rand > sim_realloc_p || village->level == sim_level)
 				{
 					removeList(&(village->hosp.assess), p);
 					addList(&(village->hosp.inside), p);
@@ -368,47 +370,47 @@ void check_patients_assess_par(struct Village *village)
 					village->hosp.realloc_lock.lock();
 					addList(&(village->back->hosp.realloc), p);
 					village->hosp.realloc_lock.unlock();
-				} 
+				}
 			}
 			else /* move to village */
 			{
 				village->hosp.free_personnel++;
 				removeList(&(village->hosp.assess), p);
-				addList(&(village->population), p); 
+				addList(&(village->population), p);
 			}
 		}
-	} 
+	}
 }
 /**********************************************************************/
-void check_patients_waiting(struct Village *village) 
+void check_patients_waiting(struct Village *village)
 {
 	struct Patient *list = village->hosp.waiting;
 	struct Patient *p;
 
-	while (list != NULL) 
+	while (list != NULL)
 	{
 		p = list;
-		list = list->forward; 
-		if (village->hosp.free_personnel > 0) 
+		list = list->forward;
+		if (village->hosp.free_personnel > 0)
 		{
 			village->hosp.free_personnel--;
 			p->time_left = sim_assess_time;
 			p->time += p->time_left;
 			removeList(&(village->hosp.waiting), p);
-			addList(&(village->hosp.assess), p); 
+			addList(&(village->hosp.assess), p);
 		}
-		else 
+		else
 		{
 			p->time++;
 		}
-	} 
+	}
 }
 /**********************************************************************/
 void check_patients_realloc(struct Village *village)
 {
 	struct Patient *p, *s;
 
-	while (village->hosp.realloc != NULL) 
+	while (village->hosp.realloc != NULL)
 	{
 		// INSIEME FIX
 		p = village->hosp.realloc;
@@ -423,19 +425,19 @@ void check_patients_realloc(struct Village *village)
 	}
 }
 /**********************************************************************/
-void check_patients_population(struct Village *village) 
+void check_patients_population(struct Village *village)
 {
 	struct Patient *list = village->population;
 	struct Patient *p;
 	float rand;
 
-	while (list != NULL) 
+	while (list != NULL)
 	{
 		p = list;
-		list = list->forward; 
+		list = list->forward;
 		/* randomize in patient */
 		rand = my_rand(&(p->seed));
-		if (rand < sim_get_sick_p) 
+		if (rand < sim_get_sick_p)
 		{
 			removeList(&(village->population), p);
 			put_in_hosp(&(village->hosp), p);
@@ -444,38 +446,34 @@ void check_patients_population(struct Village *village)
 
 }
 /**********************************************************************/
-void put_in_hosp(struct Hosp *hosp, struct Patient *patient) 
-{  
+void put_in_hosp(struct Hosp *hosp, struct Patient *patient)
+{
 	(patient->hosps_visited)++;
 
-	if (hosp->free_personnel > 0) 
+	if (hosp->free_personnel > 0)
 	{
 		hosp->free_personnel--;
-		addList(&(hosp->assess), patient); 
+		addList(&(hosp->assess), patient);
 		patient->time_left = sim_assess_time;
 		patient->time += patient->time_left;
-	} 
-	else 
+	}
+	else
 	{
-		addList(&(hosp->waiting), patient); 
+		addList(&(hosp->waiting), patient);
 	}
 }
 
-void sim_village_par(const std::launch l, struct Village *village)
+template<typename T>
+void sim_village_par_internal(struct Village *village, const T& rec_call)
 {
 	struct Village *vlist;
 
-	// lowest level returns nothing
-	// only for sim_village first call with village = NULL
-	// recursive call cannot occurs
-	if (village == NULL) return;
-
-	std::vector<std::future<void>> futures;
+	std::vector<decltype(rec_call(nullptr))> futures;
 	/* Traverse village hierarchy (lower level first)*/
 	vlist = village->forward;
 	while(vlist) {
 		//#pragma omp task untied
-		futures.push_back(std::async(l, sim_village_par, l, vlist));
+		futures.push_back(rec_call(vlist));
 		vlist = vlist->next;
 	}
 
@@ -490,7 +488,7 @@ void sim_village_par(const std::launch l, struct Village *village)
 
 	//#pragma omp taskwait
 	for(auto& f: futures) {
-		f.wait();
+		f.get();
 	}
 
 	/* Uses lists v->hosp->realloc, v->hosp->asses and v->hosp->waiting */
@@ -498,6 +496,16 @@ void sim_village_par(const std::launch l, struct Village *village)
 
 	/* Uses list v->population, v->hosp->asses and v->h->waiting */
 	check_patients_population(village);
+}
+
+void sim_village_par(const std::launch l, struct Village *village) {
+	parec::prec(
+		[](struct Village* village) { return !village; },
+		[](struct Village* village) { return; },
+		[](struct Village* village, const auto& rec_call) {
+			sim_village_par_internal(village, rec_call);
+		}
+	)(village).get();
 }
 
 /**********************************************************************/
@@ -517,7 +525,7 @@ void my_print(struct Village *village) {
 	plist = village->population;
 
 	while (plist != NULL) {
-		plist = plist->forward; 
+		plist = plist->forward;
 	}
 }
 
@@ -531,14 +539,14 @@ void read_input_data(const char *filename) {
 		ss << "Could not open sequence file (" << filename << ")\n";
 		inncabs::error(ss.str());
 	}
-	res = fscanf(fin,"%d %d %d %d %d %d %d %f %f %f %d %d %d %d %d %d %d %d %f", 
+	res = fscanf(fin,"%d %d %d %d %d %d %d %f %f %f %d %d %d %d %d %d %d %d %f",
 		&sim_level,
 		&sim_cities,
 		&sim_population_ratio,
-		&sim_time, 
+		&sim_time,
 		&sim_assess_time,
 		&sim_convalescence_time,
-		&sim_seed, 
+		&sim_seed,
 		&sim_get_sick_p,
 		&sim_convalescence_p,
 		&sim_realloc_p,
@@ -609,5 +617,5 @@ bool check_village(struct Village *top) {
 /**********************************************************************/
 void sim_village_main_par(const std::launch l, struct Village *top) {
 	long i;
-	for(i = 0; i < sim_time; i++) sim_village_par(l, top);   
+	for(i = 0; i < sim_time; i++) sim_village_par(l, top);
 }

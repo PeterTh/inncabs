@@ -1,6 +1,10 @@
 #pragma once
 
+#include "parec/core.h"
+
 #include <vector>
+#include <type_traits>
+#include <assert.h>
 #include <string.h>
 
 #define ROWS 64
@@ -67,7 +71,7 @@ static int starts(int id, int shape, coor *NWS, struct cell *cells) {
 		/* if there is only a horizontal dependence */
 	} else if (left >= 0) {
 
-		/* highest initial row is top of cell to the left - rows */ 
+		/* highest initial row is top of cell to the left - rows */
 		top = max(cells[left].top - rows + 1, 0);
 		/* lowest initial row is bottom of cell to the left */
 		bot = min(cells[left].bot, ROWS);
@@ -168,20 +172,114 @@ static void write_outputs() {
 
 	for(int i = 0; i < MIN_FOOTPRINT[0]; i++) {
 		for(int j = 0; j < MIN_FOOTPRINT[1]; j++) {
-			if(BEST_BOARD[i][j] == 0) { 
+			if(BEST_BOARD[i][j] == 0) {
 				ss << " ";
 			}
 			else {
 				ss << (char)(((int)BEST_BOARD[i][j]) - 1 + ((int)'A'));
 			}
-		} 
+		}
 		ss << "\n";
-	}  
+	}
 
 	inncabs::message(ss.str());
 }
 
-int add_cell(const std::launch l, int id, coor FOOTPRINT, ibrd BOARD, struct cell *CELLS) {
+struct params {
+	int id;
+	coor& FOOTPRINT;
+	ibrd& BOARD;
+	struct cell *CELLS;
+};
+
+using coor_dmax = coor[DMAX];
+
+struct inner_params {
+	std::atomic_int_least32_t& nnc;
+	struct cell *CELLS;
+	coor_dmax& NWS;
+	ibrd& BOARD;
+	coor& FOOTPRINT;
+	int i;
+	int j;
+	int id;
+};
+
+std::mutex m;
+
+template<typename O, typename I>
+int add_cell(const params& p, const O& outer_step, const I& inner_step);
+
+template<typename O, typename I>
+int add_cell_inner(const inner_params& p, const O& outer_step, const I& inner_step) {
+	std::atomic_int_least32_t& nnc = p.nnc;
+	struct cell *CELLS = p.CELLS;
+	coor_dmax& NWS = p.NWS;
+	ibrd& BOARD = p.BOARD;
+	coor& FOOTPRINT = p.FOOTPRINT;
+	int i = p.i;
+	int j = p.j;
+	int id = p.id;
+
+	ibrd board;
+	coor footprint;
+	struct cell* cells = (struct cell*)alloca((N + 1)*sizeof(struct cell));
+	memcpy(cells,CELLS,sizeof(struct cell)*(N+1));
+	/* extent of shape */
+	cells[id].top = NWS[j][0];
+	cells[id].bot = cells[id].top + cells[id].alt[i][0] - 1;
+	cells[id].lhs = NWS[j][1];
+	cells[id].rhs = cells[id].lhs + cells[id].alt[i][1] - 1;
+
+	memcpy(board, BOARD, sizeof(ibrd));
+
+	/* if the cell cannot be layed down, prune search */
+	if(!lay_down(id, board, cells)) {
+		std::stringstream ss;
+		ss << "Chip " << id << ", shape " << i << " does not fit\n";
+		inncabs::debug(ss.str());
+	} else {
+		/* calculate new footprint of board and area of footprint */
+		footprint[0] = max(FOOTPRINT[0], cells[id].bot+1);
+		footprint[1] = max(FOOTPRINT[1], cells[id].rhs+1);
+		int area         = footprint[0] * footprint[1];
+
+		/* if last cell */
+		if (cells[id].next == 0) {
+
+			/* if area is minimum, update global values */
+			if (area < MIN_AREA) {
+				m.lock();
+				if (area < MIN_AREA) {
+					MIN_AREA         = area;
+					MIN_FOOTPRINT[0] = footprint[0];
+					MIN_FOOTPRINT[1] = footprint[1];
+					memcpy(BEST_BOARD, board, sizeof(ibrd));
+				}
+				m.unlock();
+			}
+
+			/* if area is less than best area */
+		} else if (area < MIN_AREA) {
+			int val = outer_step({cells[id].next, footprint, board, cells}).get();
+			nnc.fetch_add(val);
+			/* if area is greater than or equal to best area, prune search */
+		} else {
+			std::stringstream ss;
+			ss << "T " << area << ", " << MIN_AREA << "\n";
+			inncabs::debug(ss.str());
+		}
+	}
+	return 0;
+}
+
+template<typename O, typename I>
+int add_cell(const params& p, const O& outer_step, const I& inner_step) {
+	int id = p.id;
+	coor& FOOTPRINT = p.FOOTPRINT;
+	ibrd& BOARD = p.BOARD;
+	struct cell *CELLS = p.CELLS;
+
 	int  i, j, nn, nnl;
 
 	coor NWS[DMAX];
@@ -189,8 +287,7 @@ int add_cell(const std::launch l, int id, coor FOOTPRINT, ibrd BOARD, struct cel
 	nnl = 0;
 	std::atomic_int_least32_t nnc { 0 };
 
-	std::mutex m;
-	std::vector<std::future<void>> futures;
+	std::vector<typename std::result_of<I(inner_params)>::type> futures;
 
 	/* for each possible shape */
 	for (i = 0; i < CELLS[id].n; i++) {
@@ -199,61 +296,11 @@ int add_cell(const std::launch l, int id, coor FOOTPRINT, ibrd BOARD, struct cel
 		nnl += nn;
 		/* for all possible locations */
 		for (j = 0; j < nn; j++) {
-			futures.push_back( std::async(l, [&, i, j, id, nn]() mutable {
-				ibrd board;
-				coor footprint;
-				struct cell* cells = (struct cell*)alloca((N + 1)*sizeof(struct cell));
-				memcpy(cells,CELLS,sizeof(struct cell)*(N+1));
-				/* extent of shape */
-				cells[id].top = NWS[j][0];
-				cells[id].bot = cells[id].top + cells[id].alt[i][0] - 1;
-				cells[id].lhs = NWS[j][1];
-				cells[id].rhs = cells[id].lhs + cells[id].alt[i][1] - 1;
-
-				memcpy(board, BOARD, sizeof(ibrd));
-
-				/* if the cell cannot be layed down, prune search */
-				if(!lay_down(id, board, cells)) {
-					std::stringstream ss;
-					ss << "Chip " << id << ", shape " << i << " does not fit\n";
-					inncabs::debug(ss.str());
-				} else {
-					/* calculate new footprint of board and area of footprint */
-					footprint[0] = max(FOOTPRINT[0], cells[id].bot+1);
-					footprint[1] = max(FOOTPRINT[1], cells[id].rhs+1);
-					int area         = footprint[0] * footprint[1];
-
-					/* if last cell */
-					if (cells[id].next == 0) {
-
-						/* if area is minimum, update global values */
-						if (area < MIN_AREA) {
-							m.lock();
-							if (area < MIN_AREA) {
-								MIN_AREA         = area;
-								MIN_FOOTPRINT[0] = footprint[0];
-								MIN_FOOTPRINT[1] = footprint[1];
-								memcpy(BEST_BOARD, board, sizeof(ibrd));
-							}
-							m.unlock();
-						}
-
-						/* if area is less than best area */
-					} else if (area < MIN_AREA) {
-						int val = add_cell(l, cells[id].next, footprint, board, cells);
-						nnc.fetch_add(val);
-						/* if area is greater than or equal to best area, prune search */
-					} else {
-						std::stringstream ss;
-						ss << "T " << area << ", " << MIN_AREA << "\n";
-						inncabs::debug(ss.str());
-					}
-				}
-			} ) );
+			futures.push_back(inner_step({nnc, CELLS, NWS, BOARD, FOOTPRINT, i, j, id}));
 		}
 	}
 	for(auto& f : futures) {
-		f.wait();
+		f.get();
 	}
 	return nnc + nnl;
 }
@@ -287,7 +334,22 @@ void compute_floorplan(const std::launch l) {
 	footprint[0] = 0;
 	footprint[1] = 0;
 	inncabs::message("Computing floorplan ");
-	add_cell(l, 1, footprint, board, gcells);
+
+	auto prec_op = parec::prec(
+		parec::fun( // outer
+			[](const params& p){ return p.CELLS[p.id].n == 0; },
+			[](const params& p){ return 0; },
+			[](const params& p, const auto& outer_step, const auto& inner_step){ return add_cell(p, outer_step, inner_step); }
+		),
+		parec::fun( // inner
+			[](const inner_params& p){ return false; },
+			[](const inner_params& p){ return 0; },
+			[](const inner_params& p, const auto& outer_step, const auto& inner_step){ return add_cell_inner(p, outer_step, inner_step); }
+		)
+	);
+
+	prec_op({1, footprint, board, gcells}).get();
+
 	inncabs::message(" completed!\n");
 
 }

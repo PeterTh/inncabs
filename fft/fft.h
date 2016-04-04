@@ -4591,7 +4591,7 @@ void fft_unshuffle_32_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m)
 /*
 * Recursive complex FFT on the n complex components of the array in:
 * basic Cooley-Tukey algorithm, with some improvements for
-* n power of two. The result is placed in the array out. n is arbitrary. 
+* n power of two. The result is placed in the array out. n is arbitrary.
 * The algorithm runs in time O(n*(r1 + ... + rk)) where r1, ..., rk
 * are prime numbers, and r1 * r2 * ... * rk = n.
 *
@@ -4630,7 +4630,7 @@ void fft_aux(const std::launch l, int n, COMPLEX * in, COMPLEX * out, int *facto
 		fft_base_2(in, out);
 		return;
 	}
-	/* 
+	/*
 	* the cases n == 3, n == 5, and maybe 7 should be implemented as well
 	*/
 
@@ -4638,9 +4638,9 @@ void fft_aux(const std::launch l, int n, COMPLEX * in, COMPLEX * out, int *facto
 	m = n / r;
 
 	if (r < n) {
-		/* 
+		/*
 		* split the DFT of length n into r DFTs of length n/r,  and
-		* recurse 
+		* recurse
 		*/
 		if (r == 32) {
 			fft_unshuffle_32(l, 0, m, in, out, m);
@@ -4667,7 +4667,7 @@ void fft_aux(const std::launch l, int n, COMPLEX * in, COMPLEX * out, int *facto
 		//	f.wait();
 		//}
 	}
-	/* 
+	/*
 	* now multiply by the twiddle factors, and perform m FFTs
 	* of length r
 	*/
@@ -4713,7 +4713,7 @@ void fft_aux_seq(int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, 
 		fft_base_2(in, out);
 		return;
 	}
-	/* 
+	/*
 	* the cases n == 3, n == 5, and maybe 7 should be implemented as well
 	*/
 
@@ -4721,9 +4721,9 @@ void fft_aux_seq(int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, 
 	m = n / r;
 
 	if (r < n) {
-		/* 
+		/*
 		* split the DFT of length n into r DFTs of length n/r,  and
-		* recurse 
+		* recurse
 		*/
 		if      (r == 32) fft_unshuffle_32_seq(0, m, in, out, m);
 		else if (r == 16) fft_unshuffle_16_seq(0, m, in, out, m);
@@ -4736,7 +4736,7 @@ void fft_aux_seq(int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, 
 			fft_aux_seq(m, out + k, in + k, factors + 1, W, nW);
 		}
 	}
-	/* 
+	/*
 	* now multiply by the twiddle factors, and perform m FFTs
 	* of length r
 	*/
@@ -4763,10 +4763,10 @@ void fft(const std::launch lt, int n, COMPLEX * in, COMPLEX * out) {
 	W = (COMPLEX *) malloc((n + 1) * sizeof(COMPLEX));
 	compute_w_coefficients(lt, n, 0, n / 2, W);
 	inncabs::message(" completed!\n");
-	
-	/* 
+
+	/*
 	* find factors of n, first 8, then 4 and then primes in ascending
-	* order 
+	* order
 	*/
 	do {
 		r = factor(l);
@@ -4777,7 +4777,7 @@ void fft(const std::launch lt, int n, COMPLEX * in, COMPLEX * out) {
 	inncabs::message("Computing FFT ");
 	fft_aux(lt, n, in, out, factors, W, n);
 	inncabs::message(" completed!\n");
-	
+
 	free(W);
 	return;
 }
@@ -4791,10 +4791,10 @@ void fft_seq(int n, COMPLEX * in, COMPLEX * out) {
 
 	W = (COMPLEX *) malloc((n + 1) * sizeof(COMPLEX));
 	compute_w_coefficients_seq(n, 0, n / 2, W);
-	
-	/* 
+
+	/*
 	* find factors of n, first 8, then 4 and then primes in ascending
-	* order 
+	* order
 	*/
 	do {
 		r = factor(l);
@@ -4803,7 +4803,7 @@ void fft_seq(int n, COMPLEX * in, COMPLEX * out) {
 	} while (l > 1);
 
 	fft_aux_seq(n, in, out, factors, W, n);
-	
+
 	free(W);
 	return;
 }
@@ -4817,7 +4817,7 @@ bool test_correctness(int n, COMPLEX *out1, COMPLEX *out2) {
 			(c_re(out1[i]) - c_re(out2[i])) +
 			(c_im(out1[i]) - c_im(out2[i])) *
 			(c_im(out1[i]) - c_im(out2[i])));
-		d =  sqrt(c_re(out2[i]) * c_re(out2[i]) + 
+		d =  sqrt(c_re(out2[i]) * c_re(out2[i]) +
 			c_im(out2[i]) * c_im(out2[i]));
 		if (d < -1.0e-10 || d > 1.0e-10) a /= d;
 		if (a > error) error = a;

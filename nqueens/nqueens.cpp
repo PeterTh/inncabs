@@ -1,5 +1,7 @@
 #include "../include/inncabs.h"
 
+#include "parec/core.h"
+
 typedef long long ll;
 typedef std::vector<int> history;
 
@@ -15,18 +17,27 @@ bool valid(const int n, const int col, const history& h) {
 }
 
 ll solutions(const int n, const std::launch l, const int col = 0, history h = history()) {
-	if(col == n) {
-		return 1;
-	} else {
-		std::vector<std::future<ll>> futures;
-		for(int row=0; row<n; ++row) {
-			history x = h;
-			x.push_back(row);
-			if(valid(n, col+1, x)) futures.push_back(std::async(l, solutions, n, l, col+1, x));
+
+	struct params {
+		int n, col;
+		history h;
+	};
+
+	auto parec_nq = parec::prec(
+		[](params p) { return p.col == p.n; },
+		[](params p) { return 1; },
+		[](params p, const auto& queens) {
+			std::vector<decltype(queens({0, 0, history()}))> futures;
+			for(int row=0; row<p.n; ++row) {
+				history x = p.h;
+				x.push_back(row);
+				if(valid(p.n, p.col+1, x)) futures.push_back(queens({p.n, p.col+1, x}));
+			}
+			return accumulate(futures.begin(), futures.end(), 0ll, [](ll sum, auto& b) { return sum + b.get(); });
 		}
-		return accumulate(futures.begin(), futures.end(), 0ll,
-			[](ll sum, std::future<ll>& b) { return sum + b.get(); });
-	}
+	);
+
+	return parec_nq({n, col, h}).get();
 }
 
 static const ll CHECK[] = { 1,0,0,2,10,4,40,92,352,724,2680,14200,73712,365596,2279184,14772512,95815104,666090624,4968057848,39029188884,314666222712 };
@@ -41,6 +52,6 @@ int main(int argc, char** argv) {
 	inncabs::run_all(
 		[n](const std::launch l) { return solutions(n, l); },
 		[n](ll result) { return result == CHECK[n-1]; },
-		ss.str() 
+		ss.str()
 		);
 }
