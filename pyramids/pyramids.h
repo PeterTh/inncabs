@@ -1,5 +1,7 @@
 #pragma once
 
+#include "parec/core.h"
+
 /*
  Adapted from the Insieme compiler "pyramids" test case.
  Copyright 2012-2014 University of Innsbruck
@@ -144,17 +146,22 @@ struct params {
 };
 
 // computes a pyramid types
-void compute_pyramid(const params& p);
-void compute_reverse(const params& p);
+template<typename Comp_P, typename Comp_R, typename Comp_WX, typename Comp_WY>
+void compute_pyramid(const params& p, const Comp_P& compute_pyramid_step, const Comp_R& compute_reverse_step, const Comp_WX& compute_wedge_x_step, const Comp_WY& compute_wedge_y_step);
+template<typename Comp_P, typename Comp_R, typename Comp_WX, typename Comp_WY>
+void compute_reverse(const params& p, const Comp_P& compute_pyramid_step, const Comp_R& compute_reverse_step, const Comp_WX& compute_wedge_x_step, const Comp_WY& compute_wedge_y_step);
 
 // computes a wedge (piece between pyramids - x base line points in x direction)
-void compute_wedge_x(const params& p);
-void compute_wedge_y(const params& p);
+template<typename Comp_P, typename Comp_R, typename Comp_WX, typename Comp_WY>
+void compute_wedge_x(const params& p, const Comp_P& compute_pyramid_step, const Comp_R& compute_reverse_step, const Comp_WX& compute_wedge_x_step, const Comp_WY& compute_wedge_y_step);
+template<typename Comp_P, typename Comp_R, typename Comp_WX, typename Comp_WY>
+void compute_wedge_y(const params& p, const Comp_P& compute_pyramid_step, const Comp_R& compute_reverse_step, const Comp_WX& compute_wedge_x_step, const Comp_WY& compute_wedge_y_step);
 
 /**
  * Computes the pyramid with center point (x,y) of size s (edge size, must be odd)
  */
-void compute_pyramid(const params& p) {
+template<typename Comp_P, typename Comp_R, typename Comp_WX, typename Comp_WY>
+void compute_pyramid(const params& p, const Comp_P& compute_pyramid_step, const Comp_R& compute_reverse_step, const Comp_WX& compute_wedge_x_step, const Comp_WY& compute_wedge_y_step) {
 	Grid* A = p.A;
 	Grid* B = p.B;
 	int x = p.x;
@@ -163,33 +170,6 @@ void compute_pyramid(const params& p) {
 
 	assert(s % 2 == 1 && "Only odd sizes are supported!");
 	//assert(x >= s && y >= s && "Coordinates not matching!");
-
-	// compute height of pyramid
-
-	if (s <= CUT_OFF) {
-
-		int h = (s + 1) / 2;
-		if (DEBUG) printf("Computing pyramid at (%d,%d) with size %d and %d levels ...\n", x, y, s, h);
-
-		// just compute the pyramid
-		for (int l = h - 1; l >= 0; l--) {
-
-			// compute one plain of the pyramid
-			for (int i = x - l; i <= x + l; i++) {
-				for (int j = y - l; j <= y + l; j++) {
-					update(A, B, i, j);
-				}
-			}
-
-			// switch plains
-			Grid* C = A;
-			A = B;
-			B = C;
-		}
-
-		// done
-		return;
-	}
 
 	if (DEBUG) printf("Decomposing pyramid at (%d,%d) with size %d ...\n", x, y, s);
 
@@ -205,39 +185,66 @@ void compute_pyramid(const params& p) {
 	int ly = y + h;
 
 	// compute 4 base-pyramids (parallel)
-	std::future<void> f1 = std::async([&]{ compute_pyramid({ A, B, ux, uy, d }); });
-	std::future<void> f2 = std::async([&]{ compute_pyramid({ A, B, ux, ly, d }); });
-	std::future<void> f3 = std::async([&]{ compute_pyramid({ A, B, lx, uy, d }); });
-	std::future<void> f4 = std::async([&]{ compute_pyramid({ A, B, lx, ly, d }); });
+	auto f1 = compute_pyramid_step({ A, B, ux, uy, d });
+	auto f2 = compute_pyramid_step({ A, B, ux, ly, d });
+	auto f3 = compute_pyramid_step({ A, B, lx, uy, d });
+	auto f4 = compute_pyramid_step({ A, B, lx, ly, d });
 
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
-	f3.wait();
-	f4.wait();
+	f1.get();
+	f2.get();
+	f3.get();
+	f4.get();
 
 	// compute 4 wedges (parallel)
-	f1 = std::async([&]{ compute_wedge_x({ A, B, ux, y, d }); });
-	f2 = std::async([&]{ compute_wedge_x({ A, B, lx, y, d }); });
-	f3 = std::async([&]{ compute_wedge_y({ A, B, x, uy, d }); });
-	f4 = std::async([&]{ compute_wedge_y({ A, B, x, ly, d }); });
+	f1 = compute_wedge_x_step({ A, B, ux, y, d });
+	f2 = compute_wedge_x_step({ A, B, lx, y, d });
+	f3 = compute_wedge_y_step({ A, B, x, uy, d });
+	f4 = compute_wedge_y_step({ A, B, x, ly, d });
 
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
-	f3.wait();
-	f4.wait();
+	f1.get();
+	f2.get();
+	f3.get();
+	f4.get();
 
 	// compute reverse pyramid in the center
-	compute_reverse({ A, B, x, y, d });
+	compute_reverse_step({ A, B, x, y, d }).get();
 
 	// compute tip
-	compute_pyramid({ A, B, x, y, d });
+	compute_pyramid_step({ A, B, x, y, d }).get();
 
 }
 
+void compute_pyramid_base(const params& p) {
+	Grid* A = p.A;
+	Grid* B = p.B;
+	int x = p.x;
+	int y = p.y;
+	int s = p.s;
 
-void compute_reverse(const params& p) {
+	int h = (s + 1) / 2;
+	if (DEBUG) printf("Computing pyramid at (%d,%d) with size %d and %d levels ...\n", x, y, s, h);
+
+	// just compute the pyramid
+	for (int l = h - 1; l >= 0; l--) {
+
+		// compute one plain of the pyramid
+		for (int i = x - l; i <= x + l; i++) {
+			for (int j = y - l; j <= y + l; j++) {
+				update(A, B, i, j);
+			}
+		}
+
+		// switch plains
+		Grid* C = A;
+		A = B;
+		B = C;
+	}
+}
+
+template<typename Comp_P, typename Comp_R, typename Comp_WX, typename Comp_WY>
+void compute_reverse(const params& p, const Comp_P& compute_pyramid_step, const Comp_R& compute_reverse_step, const Comp_WX& compute_wedge_x_step, const Comp_WY& compute_wedge_y_step) {
 	Grid* A = p.A;
 	Grid* B = p.B;
 	int x = p.x;
@@ -245,33 +252,6 @@ void compute_reverse(const params& p) {
 	int s = p.s;
 
 	assert(s % 2 == 1 && "Only odd sizes are supported!");
-
-	// check for terminal case
-	if (s <= CUT_OFF) {
-
-		// compute height of pyramid
-		int h = (s + 1) / 2;
-		if (DEBUG) printf("Computing reverse pyramid at (%d,%d) with size %d  ...\n", x, y, s);
-
-		// just compute the pyramid
-		for (int l = 0; l < h; l++) {
-
-			// compute one plain of the pyramid
-			for (int i = x - l; i <= x + l; i++) {
-				for (int j = y - l; j <= y + l; j++) {
-					update(A, B, i, j);
-				}
-			}
-
-			// switch plains
-			Grid* C = A;
-			A = B;
-			B = C;
-		}
-
-		// done
-		return;
-	}
 
 	if (DEBUG) printf("Decomposing reverse pyramid at (%d,%d) with size %d ...\n", x, y, s);
 
@@ -287,38 +267,68 @@ void compute_reverse(const params& p) {
 	int ly = y + h;
 
 	// compute tip
-	compute_reverse({A, B, x, y, d});
+	compute_reverse_step({A, B, x, y, d}).get();
 
 	// compute reverse pyramid in the center
-	compute_pyramid({A, B, x, y, d});
+	compute_pyramid_step({A, B, x, y, d}).get();
 
 	// compute 4 wedges (parallel)
-	std::future<void> f1 = std::async([&]{ compute_wedge_y({ A, B, ux, y, d}); });
-	std::future<void> f2 = std::async([&]{ compute_wedge_y({ A, B, lx, y, d}); });
-	std::future<void> f3 = std::async([&]{ compute_wedge_x({ A, B, x, uy, d}); });
-	std::future<void> f4 = std::async([&]{ compute_wedge_x({ A, B, x, ly, d}); });
+	auto f1 = compute_wedge_y_step({ A, B, ux, y, d});
+	auto f2 = compute_wedge_y_step({ A, B, lx, y, d});
+	auto f3 = compute_wedge_x_step({ A, B, x, uy, d});
+	auto f4 = compute_wedge_x_step({ A, B, x, ly, d});
 
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
-	f3.wait();
-	f4.wait();
+	f1.get();
+	f2.get();
+	f3.get();
+	f4.get();
 
 	// compute 4 base-pyramids (parallel)
-	f1 = std::async([&]{ compute_reverse({ A, B, lx, ly, d}); });
-	f2 = std::async([&]{ compute_reverse({ A, B, lx, uy, d}); });
-	f3 = std::async([&]{ compute_reverse({ A, B, ux, ly, d}); });
-	f4 = std::async([&]{ compute_reverse({ A, B, ux, uy, d}); });
+	f1 = compute_reverse_step({ A, B, lx, ly, d});
+	f2 = compute_reverse_step({ A, B, lx, uy, d});
+	f3 = compute_reverse_step({ A, B, ux, ly, d});
+	f4 = compute_reverse_step({ A, B, ux, uy, d});
 
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
-	f3.wait();
-	f4.wait();
+	f1.get();
+	f2.get();
+	f3.get();
+	f4.get();
 }
 
 
-void compute_wedge_x(const params& p) {
+void compute_reverse_base(const params& p) {
+	Grid* A = p.A;
+	Grid* B = p.B;
+	int x = p.x;
+	int y = p.y;
+	int s = p.s;
+
+	// compute height of pyramid
+	int h = (s + 1) / 2;
+	if (DEBUG) printf("Computing reverse pyramid at (%d,%d) with size %d  ...\n", x, y, s);
+
+	// just compute the pyramid
+	for (int l = 0; l < h; l++) {
+
+		// compute one plain of the pyramid
+		for (int i = x - l; i <= x + l; i++) {
+			for (int j = y - l; j <= y + l; j++) {
+				update(A, B, i, j);
+			}
+		}
+
+		// switch plains
+		Grid* C = A;
+		A = B;
+		B = C;
+	}
+}
+
+
+template<typename Comp_P, typename Comp_R, typename Comp_WX, typename Comp_WY>
+void compute_wedge_x(const params& p, const Comp_P& compute_pyramid_step, const Comp_R& compute_reverse_step, const Comp_WX& compute_wedge_x_step, const Comp_WY& compute_wedge_y_step) {
 	Grid* A = p.A;
 	Grid* B = p.B;
 	int x = p.x;
@@ -326,30 +336,6 @@ void compute_wedge_x(const params& p) {
 	int s = p.s;
 
 	assert(s > 0);
-
-	if (s <= CUT_OFF) {
-		// compute height of wedge
-		int h = (s + 1) / 2;
-
-		if (DEBUG) printf("Computing wedge %d/%d/%d/X - height %d ...\n", x, y, s, h);
-
-		// just compute the wedge
-		for (int l = 0; l < h; l++) {
-
-			// compute one level of the wedge
-			for (int i = x - (h - l) + 1; i <= x + (h - l) - 1; i++) {
-				for (int j = y - l; j <= y + l; j++) {
-					update(A, B, i, j);
-				}
-			}
-
-			// switch plains
-			Grid* C = A;
-			A = B;
-			B = C;
-		}
-		return;
-	}
 
 	if (DEBUG) printf("Decomposing wedge %d/%d/%d/X ...\n", x, y, s);
 
@@ -360,27 +346,57 @@ void compute_wedge_x(const params& p) {
 	int h = (d + 1) / 2;
 
 	// compute bottom wedges (parallel)
-	std::future<void> f1 = std::async([&]{ compute_wedge_x({A, B, x - h, y, d}); });
-	std::future<void> f2 = std::async([&]{ compute_wedge_x({A, B, x + h, y, d}); });
+	auto f1 = compute_wedge_x_step({A, B, x - h, y, d});
+	auto f2 = compute_wedge_x_step({A, B, x + h, y, d});
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
+	f1.get();
+	f2.get();
 
 	// reverse pyramid
-	compute_reverse({A, B, x, y, d});
+	compute_reverse_step({A, B, x, y, d}).get();
 
 	// compute pyramid on top
-	compute_pyramid({A, B, x, y, d});
+	compute_pyramid_step({A, B, x, y, d}).get();
 
 	// compute remaining two wedges (parallel)
-	f1 = std::async([&]{ compute_wedge_x({A, B, x, y - h, d}); });
-	f2 = std::async([&]{ compute_wedge_x({A, B, x, y + h, d}); });
+	f1 = compute_wedge_x_step({A, B, x, y - h, d});
+	f2 = compute_wedge_x_step({A, B, x, y + h, d});
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
+	f1.get();
+	f2.get();
 }
 
-void compute_wedge_y(const params& p) {
+void compute_wedge_x_base(const params& p) {
+	Grid* A = p.A;
+	Grid* B = p.B;
+	int x = p.x;
+	int y = p.y;
+	int s = p.s;
+
+	// compute height of wedge
+	int h = (s + 1) / 2;
+
+	if (DEBUG) printf("Computing wedge %d/%d/%d/X - height %d ...\n", x, y, s, h);
+
+	// just compute the wedge
+	for (int l = 0; l < h; l++) {
+
+		// compute one level of the wedge
+		for (int i = x - (h - l) + 1; i <= x + (h - l) - 1; i++) {
+			for (int j = y - l; j <= y + l; j++) {
+				update(A, B, i, j);
+			}
+		}
+
+		// switch plains
+		Grid* C = A;
+		A = B;
+		B = C;
+	}
+}
+
+template<typename Comp_P, typename Comp_R, typename Comp_WX, typename Comp_WY>
+void compute_wedge_y(const params& p, const Comp_P& compute_pyramid_step, const Comp_R& compute_reverse_step, const Comp_WX& compute_wedge_x_step, const Comp_WY& compute_wedge_y_step) {
 	Grid* A = p.A;
 	Grid* B = p.B;
 	int x = p.x;
@@ -388,31 +404,6 @@ void compute_wedge_y(const params& p) {
 	int s = p.s;
 
 	assert(s > 0);
-
-	if (s <= CUT_OFF) {
-		// compute height of wedge
-		int h = (s + 1) / 2;
-
-		if (DEBUG) printf("Computing wedge %d/%d/%d/Y ...\n", x, y, s);
-
-		// just compute the wedge
-		for (int l = 0; l < h; l++) {
-
-			// compute one plain of the pyramid
-			for (int i = x - l; i <= x + l; i++) {
-				//printf("Level %d - bounds x: %d,%d - bounds y: %d,%d\n", h, x-l, x+l, y-(h-l)+1, y+(h-l)-1 );
-				for (int j = y - (h - l) + 1; j <= y + (h - l) - 1; j++) {
-					update(A, B, i, j);
-				}
-			}
-
-			// switch plains
-			Grid* C = A;
-			A = B;
-			B = C;
-		}
-		return;
-	}
 
 	if (DEBUG) printf("Decomposing wedge %d/%d/%d/Y ...\n", x, y, s);
 
@@ -423,38 +414,99 @@ void compute_wedge_y(const params& p) {
 	int h = (d + 1) / 2;
 
 	// compute bottom wedges (parallel)
-	std::future<void> f1 = std::async([&]{ compute_wedge_y({A, B, x, y - h, d}); });
-	std::future<void> f2 = std::async([&]{ compute_wedge_y({A, B, x, y + h, d}); });
+	auto f1 = compute_wedge_y_step({A, B, x, y - h, d});
+	auto f2 = compute_wedge_y_step({A, B, x, y + h, d});
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
+	f1.get();
+	f2.get();
 
 	// reverse pyramid
-	compute_reverse({A, B, x, y, d});
+	compute_reverse_step({A, B, x, y, d}).get();
 
 	// compute pyramid on top
-	compute_pyramid({A, B, x, y, d});
+	compute_pyramid_step({A, B, x, y, d}).get();
 
 	// compute remaining two wedges (parallel)
-	f1 = std::async([&]{ compute_wedge_y({A, B, x - h, y, d}); });
-	f2 = std::async([&]{ compute_wedge_y({A, B, x + h, y, d}); });
+	f1 = compute_wedge_y_step({A, B, x - h, y, d});
+	f2 = compute_wedge_y_step({A, B, x + h, y, d});
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
+	f1.get();
+	f2.get();
+}
+
+void compute_wedge_y_base(const params& p) {
+	Grid* A = p.A;
+	Grid* B = p.B;
+	int x = p.x;
+	int y = p.y;
+	int s = p.s;
+
+	// compute height of wedge
+	int h = (s + 1) / 2;
+
+	if (DEBUG) printf("Computing wedge %d/%d/%d/Y ...\n", x, y, s);
+
+	// just compute the wedge
+	for (int l = 0; l < h; l++) {
+
+		// compute one plain of the pyramid
+		for (int i = x - l; i <= x + l; i++) {
+			//printf("Level %d - bounds x: %d,%d - bounds y: %d,%d\n", h, x-l, x+l, y-(h-l)+1, y+(h-l)-1 );
+			for (int j = y - (h - l) + 1; j <= y + (h - l) - 1; j++) {
+				update(A, B, i, j);
+			}
+		}
+
+		// switch plains
+		Grid* C = A;
+		A = B;
+		B = C;
+	}
 }
 
 
-
 void jacobi_recursive(const std::launch l, Grid* A, Grid* B, int num_iter) {
+
+	auto jacobi_group = parec::group(
+		parec::fun( // compute_pyramid_step
+			[](const params& p){ return p.s <= CUT_OFF; },
+			[](const params& p){ compute_pyramid_base(p); },
+			[](const params& p, const auto& compute_pyramid_step, const auto& compute_reverse_step, const auto& compute_wedge_x_step, const auto& compute_wedge_y_step){
+				compute_pyramid(p, compute_pyramid_step, compute_reverse_step, compute_wedge_x_step, compute_wedge_y_step);
+			}
+		),
+		parec::fun( // compute_reverse_step
+			[](const params& p){ return p.s <= CUT_OFF; },
+			[](const params& p){ compute_reverse_base(p); },
+			[](const params& p, const auto& compute_pyramid_step, const auto& compute_reverse_step, const auto& compute_wedge_x_step, const auto& compute_wedge_y_step){
+				compute_reverse(p, compute_pyramid_step, compute_reverse_step, compute_wedge_x_step, compute_wedge_y_step);
+			}
+		),
+		parec::fun( // compute_wedge_x_step
+			[](const params& p){ return p.s <= CUT_OFF; },
+			[](const params& p){ compute_wedge_x_base(p); },
+			[](const params& p, const auto& compute_pyramid_step, const auto& compute_reverse_step, const auto& compute_wedge_x_step, const auto& compute_wedge_y_step){
+				compute_wedge_x(p, compute_pyramid_step, compute_reverse_step, compute_wedge_x_step, compute_wedge_y_step);
+			}
+		),
+		parec::fun( // compute_wedge_y_step
+			[](const params& p){ return p.s <= CUT_OFF; },
+			[](const params& p){ compute_wedge_y_base(p); },
+			[](const params& p, const auto& compute_pyramid_step, const auto& compute_reverse_step, const auto& compute_wedge_x_step, const auto& compute_wedge_y_step){
+				compute_wedge_y(p, compute_pyramid_step, compute_reverse_step, compute_wedge_x_step, compute_wedge_y_step);
+			}
+		)
+	);
+
 	// compute full pyramid
 	inncabs::message("\nProcessing main pyramid ...\n");
-	compute_pyramid({ A, B, N / 2, N / 2, N - 2 });
+	parec::parec<0>(jacobi_group)({ A, B, N / 2, N / 2, N - 2 }).get();
 	inncabs::message("\nProcessing x wedge ...\n");
-	compute_wedge_x({ A, B, N / 2,0, N - 2 });
+	parec::parec<2>(jacobi_group)({ A, B, N / 2,0, N - 2 }).get();
 	inncabs::message("\nProcessing y wedge ...\n");
-	compute_wedge_y({ A, B, 0, N / 2, N - 2 });
+	parec::parec<3>(jacobi_group)({ A, B, 0, N / 2, N - 2 }).get();
 	inncabs::message("\nProcessing reverse pyramid ...\n");
-	compute_reverse({ A, B, 0, 0, N - 2 });
+	parec::parec<1>(jacobi_group)({ A, B, 0, 0, N - 2 }).get();
 }
 
 void jacobi_init(Grid* A) {

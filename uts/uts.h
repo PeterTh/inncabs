@@ -231,7 +231,7 @@ struct params {
 };
 
 template<typename T>
-unsigned long long parTreeSearch(const params& p, const T& rec_call) {
+unsigned long long parTreeSearch(params p, const T& rec_call) {
 	int depth = p.depth;
 	Node *parent = p.parent;
 	int numChildren = p.numChildren;
@@ -269,9 +269,9 @@ unsigned long long parallel_uts(const std::launch l, Node *root) {
 	root->numChildren = uts_numChildren(root);
 
 	auto p_uts = parec::prec(
-		[](const params& p) { return p.numChildren == 0; },
-		[](const params& p) { return 1ull; },
-		[](const params& p, const auto& rec_call) { return parTreeSearch(p, rec_call); }
+		[](params p) { return p.numChildren == 0; },
+		[](params p) { return 1ull; },
+		[](params p, const auto& rec_call) { return parTreeSearch(p, rec_call); }
 	);
 
 	return p_uts({0, root, root->numChildren}).get();

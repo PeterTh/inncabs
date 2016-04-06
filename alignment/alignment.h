@@ -424,7 +424,7 @@ int pairalign(const std::launch l) {
 		} // for (j)
 	} // for (i)
 
-	parec::pfor(params, [](const pairalign_params& p) {
+	parec::pfor<parec::loop_policy::queue>(params, [](const pairalign_params& p) {
 		int i = p.i;
 		int m = p.m;
 		int sj = p.sj;

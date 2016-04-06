@@ -3,3 +3,6 @@ Debug
 Release
 *.user
 ~*
+bin/*
+results.*
+build/win/inncabs/.vs
