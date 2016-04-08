@@ -280,7 +280,7 @@ void fft_twiddle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 	} else {
 		int ab = (a + b) / 2;
 		cilk_spawn [=]() { fft_twiddle_2(l, a, ab, in, out, W, nW, nWdn, m); } ();
-		[=]() { fft_twiddle_2(l, ab, b, in, out, W, nW, nWdn, m); } );
+		[=]() { fft_twiddle_2(l, ab, b, in, out, W, nW, nWdn, m); } ();
 		cilk_sync;
 	}
 }
