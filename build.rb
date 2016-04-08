@@ -1,9 +1,7 @@
-require './color.rb'
+require 'color.rb'
 
-# COMPILER = "/software-local/insieme-libs/llvm-latest/bin/clang++"
-# CPPFLAGS = "-std=c++11 -stdlib=libc++ -Wall -isystem /software-local/insieme-libs/libc++-svn/include/c++/v1/ -L /software-local/insieme-libs/libc++-svn/lib/"
-COMPILER = "g++-5"
-CPPFLAGS = "-std=c++11 -Wall -fcilkplus"
+COMPILER = "/software-local/insieme-libs/with_gcc_5.2.0/gcc-5.2.0/bin/g++"
+CPPFLAGS = "-std=c++14 -Wall -L /software-local/insieme-libs/with_gcc_5.2.0/gcc-5.2.0/lib64 -lpthread -I lib/parec/code/include -fmax-errors=2 -fcilkplus"
 
 debug = ARGV.include?("--dbg")
 parallel = ARGV.include?("--par")
@@ -24,7 +22,7 @@ Dir["**/*.cpp"].each do |cppfile|
 		end
 		command = "#{COMPILER} #{cppfile} -o #{outfname} #{CPPFLAGS}"
 		#command = "/software-local/insieme-libs/gcc-4.9.0/bin/g++ #{cppfile} -o #{outfname} -std=c++11 -Wall -lpthread"
-		command += " -g3" if debug
+		command += " -g -DINNCABS_DEBUG  -DINNCABS_MSG" if debug
 		command += " -O3" if !debug
 		puts "======== Building " + fname.green.bold + (debug && " debug" || " release") + " version"
 		`#{command}`
