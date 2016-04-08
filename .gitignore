@@ -6,3 +6,4 @@ Release
 bin/*
 results.*
 build/win/inncabs/.vs
+*~
