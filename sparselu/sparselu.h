@@ -26,6 +26,7 @@ bool sparselu_check(float **SEQ, float **BENCH);
 ///////////////////////////////////////////////// IMPLEMENTATION
 
 #include <vector>
+#include <cilk/cilk.h>
 
 #define TRUE  1
 #define FALSE 0
@@ -181,35 +182,29 @@ void sparselu_par_call(const std::launch l, float **BENCH) {
 	for(int kk=0; kk<arg_size_1; kk++) {
 		lu0(BENCH[kk*arg_size_1+kk]);
 		for(int jj=kk+1; jj<arg_size_1; jj++) {
-			std::vector<std::future<void>> futures;
 			if(BENCH[kk*arg_size_1+jj] != NULL) {
-				futures.push_back(std::async(l, fwd, BENCH[kk*arg_size_1+kk], BENCH[kk*arg_size_1+jj]));
+				cilk_spawn fwd(BENCH[kk*arg_size_1+kk], BENCH[kk*arg_size_1+jj]);
 			}
 			for(int ii=kk+1; ii<arg_size_1; ii++) {
 				if(BENCH[ii*arg_size_1+kk] != NULL)	{
-					futures.push_back(std::async(l, bdiv, BENCH[kk*arg_size_1+kk], BENCH[ii*arg_size_1+kk]));
+					cilk_spawn bdiv(BENCH[kk*arg_size_1+kk], BENCH[ii*arg_size_1+kk]);
 				}
 			}
-			for(auto& f : futures) {
-				f.wait();
-			}
-			futures.clear();
+			cilk_sync;
 
 			for(int ii=kk+1; ii<arg_size_1; ii++) {
 				if(BENCH[ii*arg_size_1+kk] != NULL) {
 					for(jj=kk+1; jj<arg_size_1; jj++) {
 						if(BENCH[kk*arg_size_1+jj] != NULL)	{
-							futures.push_back(std::async(l, [=]() {
+							cilk_spawn [=]() {
 								if(BENCH[ii*arg_size_1+jj]==NULL) BENCH[ii*arg_size_1+jj] = allocate_clean_block();
 								bmod(BENCH[ii*arg_size_1+kk], BENCH[kk*arg_size_1+jj], BENCH[ii*arg_size_1+jj]);
-							} ) );
+							} ();
 						}
 					}
 				}
 			}
-			for(auto& f : futures) {
-				f.wait();
-			}
+			cilk_sync;
 		}
 	}
 	inncabs::message("completed!\n");

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cilk/cilk.h>
+
 /*
  Adapted from the Insieme compiler "qap" test case.
  Copyright 2012-2014 University of Innsbruck
@@ -64,12 +66,10 @@ int solve_rec(const std::launch l, problem* problem, solution* partial, int plan
 		return best_known;
 	}
 
-	std::vector<std::future<void>> futures;
-
 	// fix current position
 	for(int i=0; i<problem->size; i++) {
 		// check whether current spot is a free spot
-		futures.push_back(std::async(l, [=, &best_known]() {
+		cilk_spawn [=, &best_known]() {
 			if(!(1<<i & used_mask)) {
 				// extend solution
 				solution tmp = {partial, i};
@@ -101,12 +101,10 @@ int solve_rec(const std::launch l, problem* problem, solution* partial, int plan
 					do { best = best_known; } while (cur_best < best && best_known.compare_exchange_strong(best, cur_best));
 				}
 			} 
-		}));
+		}();
 	}
 
-	for(auto& f : futures) {
-		f.wait();
-	}
+	cilk_sync;
 
 	return best_known;
 }

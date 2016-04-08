@@ -62,6 +62,8 @@
 
 #include "brg_sha1.h"
 
+#include <cilk/cilk.h>
+
 #define UTS_VERSION "2.1"
 
 /***********************************************************
@@ -236,8 +238,8 @@ unsigned long long parTreeSearch(const std::launch l, int depth, Node *parent, i
 	Node *n;
 	n = (Node*)alloca(sizeof(Node)*numChildren);
 	Node *nodePtr;
-	unsigned long long subtreesize = 1;
-	std::vector<std::future<unsigned long long>> futures;
+
+	std::atomic<unsigned long long> subtreesize(1);
 
 	// Recurse on the children
 	for(int i = 0; i < numChildren; i++) {
@@ -252,12 +254,12 @@ unsigned long long parTreeSearch(const std::launch l, int depth, Node *parent, i
 
 		nodePtr->numChildren = uts_numChildren(nodePtr);
 
-		futures.push_back( std::async(l, parTreeSearch, l, depth+1, nodePtr, nodePtr->numChildren) );	
+		cilk_spawn [&,nodePtr](){ 
+			subtreesize.fetch_add(parTreeSearch( l, depth+1, nodePtr, nodePtr->numChildren)); 
+		}();	
 	}
 
-	for(auto& f: futures) {
-		subtreesize += f.get();
-	}
+	cilk_sync;
 
 	return subtreesize;
 }

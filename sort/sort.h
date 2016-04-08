@@ -40,6 +40,8 @@
 
 #include <cstring>
 
+#include <cilk/cilk.h>
+
 typedef long ELM;
 
 void seqquick(ELM *low, ELM *high); 
@@ -211,7 +213,7 @@ void cilkmerge_par(const std::launch l, ELM *low1, ELM *high1, ELM *low2, ELM *h
 	}
 	if(high2 < low2) {
 		/* smaller range is empty */
-		memcpy(lowdest, low1, sizeof(ELM) * (high1 - low1));
+		[&](){ memcpy(lowdest, low1, sizeof(ELM) * (high1 - low1)); }();
 		return;
 	}
 	if(high2 - low2 < arg_cutoff_1 ) {
@@ -234,10 +236,9 @@ void cilkmerge_par(const std::launch l, ELM *low1, ELM *high1, ELM *low2, ELM *h
 	* the appropriate location
 	*/
 	*(lowdest + lowsize + 1) = *split1;
-	std::future<void> f1 = std::async(l, cilkmerge_par, l, low1, split1 - 1, low2, split2, lowdest);
-	std::future<void> f2 = std::async(l, cilkmerge_par, l, split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2);
-	f1.wait();
-	f2.wait();
+	cilk_spawn cilkmerge_par( l, low1, split1 - 1, low2, split2, lowdest);
+	cilkmerge_par( l, split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2);
+	cilk_sync;
 	return;
 }
 
@@ -266,19 +267,15 @@ void cilksort_par(const std::launch l, ELM *low, ELM *tmp, long size) {
 	D = C + quarter;
 	tmpD = tmpC + quarter;
 
-	std::future<void> f1 = std::async(l, cilksort_par, l, A, tmpA, quarter);
-	std::future<void> f2 = std::async(l, cilksort_par, l, B, tmpB, quarter);
-	std::future<void> f3 = std::async(l, cilksort_par, l, C, tmpC, quarter);
-	std::future<void> f4 = std::async(l, cilksort_par, l, D, tmpD, size - 3 * quarter);
-	f1.wait();
-	f2.wait();
-	f3.wait();
-	f4.wait();
+	cilk_spawn cilksort_par( l, A, tmpA, quarter);
+	cilk_spawn cilksort_par( l, B, tmpB, quarter);
+	cilk_spawn cilksort_par( l, C, tmpC, quarter);
+	cilksort_par( l, D, tmpD, size - 3 * quarter);
+	cilk_sync;
 
-	std::future<void> f5 = std::async(l, cilkmerge_par, l, A, A + quarter - 1, B, B + quarter - 1, tmpA);
-	std::future<void> f6 = std::async(l, cilkmerge_par, l, C, C + quarter - 1, D, low + size - 1, tmpC);
-	f5.wait();
-	f6.wait();
+	cilk_spawn cilkmerge_par( l, A, A + quarter - 1, B, B + quarter - 1, tmpA);
+	cilkmerge_par( l, C, C + quarter - 1, D, low + size - 1, tmpC);
+	cilk_sync;
 
 	cilkmerge_par(l, tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
 }

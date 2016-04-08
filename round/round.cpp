@@ -2,6 +2,8 @@
 
 #include <random>
 
+#include <cilk/cilk.h>
+
 class Philosopher {
     std::mt19937_64 eng_{std::random_device{}()};
 
@@ -76,13 +78,10 @@ int main(int argc, char** argv) {
 
 	inncabs::run_all(
 		[&](const std::launch l) {
-			std::vector<std::future<void>> futures;
 			for(auto& d : diners) {
-				futures.push_back(std::async(l, [&] { d.dine(); }));
+				cilk_spawn [&] { d.dine(); }();
 			}
-			for(auto& f : futures) {
-				f.wait();
-			}
+			cilk_sync;
 			return true;
 		},
 		[&](bool result) {

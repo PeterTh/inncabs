@@ -3,6 +3,8 @@
 #include <vector>
 #include <string.h>
 
+#include <cilk/cilk.h>
+
 #define ROWS 64
 #define COLS 64
 #define DMAX 64
@@ -190,7 +192,6 @@ int add_cell(const std::launch l, int id, coor FOOTPRINT, ibrd BOARD, struct cel
 	std::atomic_int_least32_t nnc { 0 };
 
 	std::mutex m;
-	std::vector<std::future<void>> futures;
 
 	/* for each possible shape */
 	for (i = 0; i < CELLS[id].n; i++) {
@@ -199,7 +200,7 @@ int add_cell(const std::launch l, int id, coor FOOTPRINT, ibrd BOARD, struct cel
 		nnl += nn;
 		/* for all possible locations */
 		for (j = 0; j < nn; j++) {
-			futures.push_back( std::async(l, [&, i, j, id, nn]() mutable {
+			cilk_spawn [&, i, j, id, nn]() mutable {
 				ibrd board;
 				coor footprint;
 				struct cell* cells = (struct cell*)alloca((N + 1)*sizeof(struct cell));
@@ -249,12 +250,10 @@ int add_cell(const std::launch l, int id, coor FOOTPRINT, ibrd BOARD, struct cel
 						inncabs::debug(ss.str());
 					}
 				}
-			} ) );
+			} ();
 		}
 	}
-	for(auto& f : futures) {
-		f.wait();
-	}
+	cilk_sync;
 	return nnc + nnl;
 }
 

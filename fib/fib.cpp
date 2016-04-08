@@ -1,14 +1,16 @@
 #include "../include/inncabs.h"
 
+#include <cilk/cilk.h>
+
 typedef long long ll;
 
 ll fib(int n, const std::launch l) {
 	if(n < 2) return n;
 
-	auto x = std::async(l, fib, n - 1, l);
-	auto y = std::async(l, fib, n - 2, l);
-
-	return x.get() + y.get();
+	auto x = cilk_spawn fib(n - 1, l);
+	auto y = fib(n - 2, l);
+	cilk_sync;
+	return x + y;
 }
 
 static const ll FIB_RESULTS_PRE = 41;

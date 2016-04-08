@@ -36,6 +36,8 @@
 *
 */
 
+#include <cilk/cilk.h>
+
 /* ******************************************************************* */
 /* STRASSEN APPLICATION CUT OFF's                                      */
 /* ******************************************************************* */
@@ -747,35 +749,32 @@ void OptimizedStrassenMultiply_par(const std::launch l, REAL *C, REAL *A, REAL *
 		MatrixOffsetB += RowIncrementB;
 	} /* end column loop */
 
-	std::vector<std::future<void>> futures;
 
 	/* M2 = A11 x B11 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, M2, A11, B11, QuadrantSize, QuadrantSize, RowWidthA, RowWidthB, Depth+1));
+	cilk_spawn OptimizedStrassenMultiply_par( l, M2, A11, B11, QuadrantSize, QuadrantSize, RowWidthA, RowWidthB, Depth+1);
 
 	/* M5 = S1 * S5 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, M5, S1, S5, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth+1));
+	cilk_spawn OptimizedStrassenMultiply_par( l, M5, S1, S5, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth+1);
 
 	/* Step 1 of T1 = S2 x S6 + M2 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, T1sMULT, S2, S6,  QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth+1));
+	cilk_spawn OptimizedStrassenMultiply_par( l, T1sMULT, S2, S6,  QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth+1);
 
 	/* Step 1 of T2 = T1 + S3 x S7 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, C22, S3, S7, QuadrantSize, RowWidthC /*FIXME*/, QuadrantSize, QuadrantSize, Depth+1));
+	cilk_spawn OptimizedStrassenMultiply_par( l, C22, S3, S7, QuadrantSize, RowWidthC /*FIXME*/, QuadrantSize, QuadrantSize, Depth+1);
 
 	/* Step 1 of C11 = M2 + A12 * B21 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, C11, A12, B21, QuadrantSize, RowWidthC, RowWidthA, RowWidthB, Depth+1));
+	cilk_spawn OptimizedStrassenMultiply_par( l, C11, A12, B21, QuadrantSize, RowWidthC, RowWidthA, RowWidthB, Depth+1);
 
 	/* Step 1 of C12 = S4 x B22 + T1 + M5 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, C12, S4, B22, QuadrantSize, RowWidthC, QuadrantSize, RowWidthB, Depth+1));
+	cilk_spawn OptimizedStrassenMultiply_par( l, C12, S4, B22, QuadrantSize, RowWidthC, QuadrantSize, RowWidthB, Depth+1);
 
 	/* Step 1 of C21 = T2 - A22 * S8 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, C21, A22, S8, QuadrantSize, RowWidthC, RowWidthA, QuadrantSize, Depth+1));
+	OptimizedStrassenMultiply_par( l, C21, A22, S8, QuadrantSize, RowWidthC, RowWidthA, QuadrantSize, Depth+1);
 
 	/**********************************************
 	** Synchronization Point
 	**********************************************/
-	for(auto& f: futures) {
-		f.wait();
-	}
+	cilk_sync;
 
 	/***************************************************************************
 	** Step through all columns row by row (vertically)

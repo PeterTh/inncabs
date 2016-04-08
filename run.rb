@@ -17,7 +17,7 @@ max_cpus = read_int_param("--max-cpus", 8)
 repeats = read_int_param("--repeats", 5)
 timeout_secs = read_int_param("--timeout", 100)
 
-launch_types = %w(deferred optional async)
+launch_types = %w(async)
 
 params = {
 	"alignment" => "bin/input/alignment/prot.100.aa",
@@ -66,7 +66,7 @@ Dir["**/*.cpp"].each do |cppfile|
 				command += "set INNCABS_LAUNCH_TYPES=#{launch_type}\nset INNCABS_TIMEOUT=#{timeout_secs*1000}\n"
 				command += "start #{win_cpu_aff[num_cpus]} /B /WAIT #{binfname}"
 			else
-				command = "timeout #{timeout_secs} taskset -c #{cpulist} #{binfname}"
+				command = "CILK_NWORKERS=#{num_cpus} timeout #{timeout_secs} #{binfname}"
 				command = "export INNCABS_REPEATS=#{repeats}\nexport INNCABS_MIN_OUTPUT=true\nexport INNCABS_LAUNCH_TYPES=#{launch_type}\n" + command
 				command = "ulimit -t #{timeout_secs*num_cpus}\n" + command
 			end

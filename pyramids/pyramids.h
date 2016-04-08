@@ -8,6 +8,8 @@
 #include <cmath>
 #include <cassert>
 
+#include <cilk/cilk.h>
+
 // define the problem size
 #ifndef P
 	#define P 11
@@ -138,18 +140,18 @@ void jacobi_iterative(Grid* A, Grid* B, int num_iter) {
 
 
 // computes a pyramid types
-void compute_pyramid(const std::launch l, Grid* A, Grid* B, int x, int y, int h);
-void compute_reverse(const std::launch l, Grid* A, Grid* B, int x, int y, int h);
+void compute_pyramid(Grid* A, Grid* B, int x, int y, int h);
+void compute_reverse(Grid* A, Grid* B, int x, int y, int h);
 
 // computes a wedge (piece between pyramids - x base line points in x direction)
-void compute_wedge_x(const std::launch l, Grid* A, Grid* B, int x, int y, int h);
-void compute_wedge_y(const std::launch l, Grid* A, Grid* B, int x, int y, int h);
+void compute_wedge_x(Grid* A, Grid* B, int x, int y, int h);
+void compute_wedge_y(Grid* A, Grid* B, int x, int y, int h);
 
 
 /**
  * Computes the pyramid with center point (x,y) of size s (edge size, must be odd)
  */
-void compute_pyramid(const std::launch l, Grid* A, Grid* B, int x, int y, int s) {
+void compute_pyramid(Grid* A, Grid* B, int x, int y, int s) {
 	assert(s % 2 == 1 && "Only odd sizes are supported!");
 	//assert(x >= s && y >= s && "Coordinates not matching!");
 
@@ -195,46 +197,40 @@ void compute_pyramid(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute 4 base-pyramids (parallel)
 	// #pragma omp task
-	std::future<void> f1 = std::async(l, compute_pyramid, l, A, B, ux, uy,  d);
+	cilk_spawn compute_pyramid( A, B, ux, uy,  d);
 	// #pragma omp task
-	std::future<void> f2 = std::async(l, compute_pyramid, l, A, B, ux, ly,  d);
+	cilk_spawn compute_pyramid( A, B, ux, ly,  d);
 	// #pragma omp task
-	std::future<void> f3 = std::async(l, compute_pyramid, l, A, B, lx, uy,  d);
+	cilk_spawn compute_pyramid( A, B, lx, uy,  d);
 	// #pragma omp task
-	std::future<void> f4 = std::async(l, compute_pyramid, l, A, B, lx, ly,  d);
+	compute_pyramid( A, B, lx, ly,  d);
 
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
-	f3.wait();
-	f4.wait();
+	cilk_sync;
 
 	// compute 4 wedges (parallel)
 	// #pragma omp task
-	f1 = std::async(l, compute_wedge_x, l, A, B, ux, y, d);
+	cilk_spawn compute_wedge_x( A, B, ux, y, d);
 	// #pragma omp task
-	f2 = std::async(l, compute_wedge_x, l, A, B, lx, y, d);
+	cilk_spawn compute_wedge_x( A, B, lx, y, d);
 	// #pragma omp task
-	f3 = std::async(l, compute_wedge_y, l, A, B, x, uy, d);
+	cilk_spawn compute_wedge_y( A, B, x, uy, d);
 	// #pragma omp task
-	f4 = std::async(l, compute_wedge_y, l, A, B, x, ly, d);
+	compute_wedge_y( A, B, x, ly, d);
 
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
-	f3.wait();
-	f4.wait();
+	cilk_sync;
 
 	// compute reverse pyramid in the center
-	compute_reverse(l, A, B, x, y, d);
+	compute_reverse( A, B, x, y, d);
 
 	// compute tip
-	compute_pyramid(l, A, B, x, y, d);
+	compute_pyramid( A, B, x, y, d);
 
 }
 
 
-void compute_reverse(const std::launch l, Grid* A, Grid* B, int x, int y, int s) {
+void compute_reverse(Grid* A, Grid* B, int x, int y, int s) {
 	assert(s % 2 == 1 && "Only odd sizes are supported!");
 
 	// check for terminal case
@@ -278,46 +274,40 @@ void compute_reverse(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 	int ly = y + h;
 
 	// compute tip
-	compute_reverse(l, A, B, x, y, d);
+	compute_reverse( A, B, x, y, d);
 
 	// compute reverse pyramid in the center
-	compute_pyramid(l, A, B, x, y, d);
+	compute_pyramid( A, B, x, y, d);
 
 	// compute 4 wedges (parallel)
 	// #pragma omp task
-	std::future<void> f1 = std::async(l, compute_wedge_y, l, A, B, ux, y, d);
+	cilk_spawn compute_wedge_y( A, B, ux, y, d);
 	// #pragma omp task
-	std::future<void> f2 = std::async(l, compute_wedge_y, l, A, B, lx, y, d);
+	cilk_spawn compute_wedge_y( A, B, lx, y, d);
 	// #pragma omp task
-	std::future<void> f3 = std::async(l, compute_wedge_x, l, A, B, x, uy,  d);
+	cilk_spawn compute_wedge_x( A, B, x, uy,  d);
 	// #pragma omp task
-	std::future<void> f4 = std::async(l, compute_wedge_x, l, A, B, x, ly, d);
+	compute_wedge_x( A, B, x, ly, d);
 
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
-	f3.wait();
-	f4.wait();
+	cilk_sync;
 
 	// compute 4 base-pyramids (parallel)
 	// #pragma omp task
-	f1 = std::async(l, compute_reverse, l, A, B, lx, ly,  d);
+	cilk_spawn compute_reverse( A, B, lx, ly,  d);
 	// #pragma omp task
-	f2 = std::async(l, compute_reverse, l, A, B, lx, uy,  d);
+	cilk_spawn compute_reverse( A, B, lx, uy,  d);
 	// #pragma omp task
-	f3 = std::async(l, compute_reverse, l, A, B, ux, ly,  d);
+	cilk_spawn compute_reverse( A, B, ux, ly,  d);
 	// #pragma omp task
-	f4 = std::async(l, compute_reverse, l, A, B, ux, uy,  d);
+	compute_reverse( A, B, ux, uy,  d);
 
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
-	f3.wait();
-	f4.wait();
+	cilk_sync;
 }
 
 
-void compute_wedge_x(const std::launch l, Grid* A, Grid* B, int x, int y, int s) {
+void compute_wedge_x(Grid* A, Grid* B, int x, int y, int s) {
 	assert(s > 0);
 
 	if (s <= CUT_OFF) {
@@ -354,30 +344,28 @@ void compute_wedge_x(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute bottom wedges (parallel)
 	// #pragma omp task
-	std::future<void> f1 = std::async(l, compute_wedge_x, l, A, B, x-h, y, d);
+	cilk_spawn compute_wedge_x( A, B, x-h, y, d);
 	// #pragma omp task
-	std::future<void> f2 = std::async(l, compute_wedge_x, l, A, B, x+h, y, d);
+	compute_wedge_x( A, B, x+h, y, d);
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
+	cilk_sync;
 
 	// reverse pyramid
-	compute_reverse(l, A, B, x, y, d);
+	compute_reverse( A, B, x, y, d);
 
 	// compute pyramid on top
-	compute_pyramid(l, A, B, x, y, d);
+	compute_pyramid( A, B, x, y, d);
 
 	// compute remaining two wedges (parallel)
 	// #pragma omp task
-	f1 = std::async(l, compute_wedge_x, l, A, B, x, y-h, d);
+	cilk_spawn compute_wedge_x( A, B, x, y-h, d);
 	// #pragma omp task
-	f2 = std::async(l, compute_wedge_x, l, A, B, x, y+h, d);
+	compute_wedge_x( A, B, x, y+h, d);
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
+	cilk_sync;
 }
 
-void compute_wedge_y(const std::launch l, Grid* A, Grid* B, int x, int y, int s) {
+void compute_wedge_y(Grid* A, Grid* B, int x, int y, int s) {
 	assert(s > 0);
 
 	if (s <= CUT_OFF) {
@@ -415,41 +403,39 @@ void compute_wedge_y(const std::launch l, Grid* A, Grid* B, int x, int y, int s)
 
 	// compute bottom wedges (parallel)
 	// #pragma omp task
-	std::future<void> f1 = std::async(l, compute_wedge_y, l, A, B, x, y-h, d);
+	cilk_spawn compute_wedge_y( A, B, x, y-h, d);
 	// #pragma omp task
-	std::future<void> f2 = std::async(l, compute_wedge_y, l, A, B, x, y+h, d);
+	compute_wedge_y( A, B, x, y+h, d);
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
+	cilk_sync;
 
 	// reverse pyramid
-	compute_reverse(l, A, B, x, y, d);
+	compute_reverse( A, B, x, y, d);
 
 	// compute pyramid on top
-	compute_pyramid(l, A, B, x, y, d);
+	compute_pyramid( A, B, x, y, d);
 
 	// compute remaining two wedges (parallel)
 	// #pragma omp task
-	f1 = std::async(l, compute_wedge_y, l, A, B, x-h, y, d);
+	cilk_spawn compute_wedge_y( A, B, x-h, y, d);
 	// #pragma omp task
-	f2 = std::async(l, compute_wedge_y, l, A, B, x+h, y, d);
+	compute_wedge_y( A, B, x+h, y, d);
 	// #pragma omp taskwait
-	f1.wait();
-	f2.wait();
+	cilk_sync;
 }
 
 
 
-void jacobi_recursive(const std::launch l, Grid* A, Grid* B, int num_iter) {
+void jacobi_recursive(const std::launch, Grid* A, Grid* B, int num_iter) {
 	// compute full pyramid
 	inncabs::message("\nProcessing main pyramid ...\n");
-	compute_pyramid(l, A, B, N/2, N/2, N-2);
+	compute_pyramid(A, B, N/2, N/2, N-2);
 	inncabs::message("\nProcessing x wedge ...\n");
-	compute_wedge_x(l, A, B, N/2,0, N-2);
+	compute_wedge_x(A, B, N/2,0, N-2);
 	inncabs::message("\nProcessing y wedge ...\n");
-	compute_wedge_y(l, A, B, 0, N/2, N-2);
+	compute_wedge_y(A, B, 0, N/2, N-2);
 	inncabs::message("\nProcessing reverse pyramid ...\n");
-	compute_reverse(l, A, B, 0, 0, N-2);
+	compute_reverse(A, B, 0, 0, N-2);
 }
 
 void jacobi_init(Grid* A) {

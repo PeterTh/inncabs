@@ -31,6 +31,7 @@
 */
 
 #include <mutex>
+#include <cilk/cilk.h>
 
 /* random defines */
 #define IA 16807
@@ -470,12 +471,11 @@ void sim_village_par(const std::launch l, struct Village *village)
 	// recursive call cannot occurs
 	if (village == NULL) return;
 
-	std::vector<std::future<void>> futures;
 	/* Traverse village hierarchy (lower level first)*/
 	vlist = village->forward;
 	while(vlist) {
 		//#pragma omp task untied
-		futures.push_back(std::async(l, sim_village_par, l, vlist));
+		cilk_spawn sim_village_par(l, vlist);
 		vlist = vlist->next;
 	}
 
@@ -489,9 +489,7 @@ void sim_village_par(const std::launch l, struct Village *village)
 	check_patients_waiting(village);
 
 	//#pragma omp taskwait
-	for(auto& f: futures) {
-		f.wait();
-	}
+	cilk_sync;
 
 	/* Uses lists v->hosp->realloc, v->hosp->asses and v->hosp->waiting */
 	check_patients_realloc(village);

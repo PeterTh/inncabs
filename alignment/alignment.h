@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cilk/cilk.h>
+
 void del(int k, int *print_ptr, int *last_print, int *displ);
 void add(int v, int *print_ptr, int *last_print, int *displ);
 int calc_score(int iat, int jat, int v1, int v2, int seq1, int seq2);
@@ -395,7 +397,6 @@ int pairalign(const std::launch l) {
 
 	inncabs::message("Start aligning ");
 
-	std::vector<std::future<void>> futures;
 	for (si = 0; si < nseqs; si++) {
 		n = seqlen_array[si+1];
 		for (i = 1, len1 = 0; i <= n; i++) {
@@ -408,7 +409,7 @@ int pairalign(const std::launch l) {
 			if ( n == 0 || m == 0 ) {
 				bench_output[si*nseqs+sj] = (int) 1.0;
 			} else {
-				futures.push_back( std::async(l, [&,i,m,n,si,sj,len1]() mutable {
+				cilk_spawn [&,i,m,n,si,sj,len1]() mutable {
 					int se1, se2, sb1, sb2, maxscore, seq1, seq2, g, gh, len2;
 					int displ[2*MAX_ALN_LENGTH+1];
 					int print_ptr, last_print;
@@ -442,14 +443,12 @@ int pairalign(const std::launch l) {
 					else                        mm_score /= (double) MIN(len1,len2);
 
 					bench_output[si*nseqs+sj] = (int) mm_score;
-				} ) ); // end async
+				} ();
 			} // end if (n == 0 || m == 0)
 		} // for (j)
 	} // for (i)
 
-	for(auto &f : futures) {
-		f.wait();
-	}
+	cilk_sync;
 
 	inncabs::message(" completed!\n");
 	return 0;

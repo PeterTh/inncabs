@@ -1,5 +1,7 @@
 #include "../include/inncabs.h"
 
+#include <cilk/cilk.h>
+
 typedef long long ll;
 typedef std::vector<int> history;
 
@@ -18,14 +20,19 @@ ll solutions(const int n, const std::launch l, const int col = 0, history h = hi
 	if(col == n) {
 		return 1;
 	} else {
-		std::vector<std::future<ll>> futures;
+		std::atomic<ll> sum(0);
 		for(int row=0; row<n; ++row) {
 			history x = h;
 			x.push_back(row);
-			if(valid(n, col+1, x)) futures.push_back(std::async(l, solutions, n, l, col+1, x));
+			if(valid(n, col+1, x)) {
+				auto op = [&,x](){
+					sum.fetch_add(solutions(n, l, col+1, x));
+				};
+			
+				cilk_spawn op();
+			}
 		}
-		return accumulate(futures.begin(), futures.end(), 0ll,
-			[](ll sum, std::future<ll>& b) { return sum + b.get(); });
+		return sum;
 	}
 }
 

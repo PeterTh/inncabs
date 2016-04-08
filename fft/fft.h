@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cilk/cilk.h>
+
 /* our real numbers */
 typedef double REAL;
 
@@ -77,9 +79,9 @@ void compute_w_coefficients(const std::launch l, int n, int a, int b, COMPLEX * 
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { compute_w_coefficients(l, n, a, ab, W); } );
-		auto f2 = std::async(l, [=]() { compute_w_coefficients(l, n, ab + 1, b, W); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { compute_w_coefficients(l, n, a, ab, W); }();
+		[=]() { compute_w_coefficients(l, n, ab + 1, b, W); }();
+		cilk_sync;
 	}
 }
 void compute_w_coefficients_seq(int n, int a, int b, COMPLEX * W) {
@@ -150,9 +152,9 @@ void unshuffle(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, i
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { unshuffle(l, a, ab, in, out, r, m); } );
-		auto f2 = std::async(l, [=]() { unshuffle(l, ab, b, in, out, r, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { unshuffle(l, a, ab, in, out, r, m); }();
+		[=]() { unshuffle(l, ab, b, in, out, r, m); }();
+		cilk_sync;
 	}
 }
 void unshuffle_seq(int a, int b, COMPLEX * in, COMPLEX * out, int r, int m) {
@@ -217,9 +219,9 @@ void fft_twiddle_gen(const std::launch l, int i, int i1, COMPLEX * in, COMPLEX *
 		fft_twiddle_gen1(in + i, out + i, W, r, m, nW, nWdn * i, nWdn * m);
 	} else {
 		int i2 = (i + i1) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_gen(l, i, i2, in, out, W, nW, nWdn, r, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_gen(l, i2, i1, in, out, W, nW, nWdn, r, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_twiddle_gen(l, i, i2, in, out, W, nW, nWdn, r, m); } ();
+		[=]() { fft_twiddle_gen(l, i2, i1, in, out, W, nW, nWdn, r, m); } ();
+		cilk_sync;
 	}
 	return;
 }
@@ -277,9 +279,9 @@ void fft_twiddle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_2(l, a, ab, in, out, W, nW, nWdn, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_2(l, ab, b, in, out, W, nW, nWdn, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_twiddle_2(l, a, ab, in, out, W, nW, nWdn, m); } ();
+		[=]() { fft_twiddle_2(l, ab, b, in, out, W, nW, nWdn, m); } );
+		cilk_sync;
 	}
 }
 void fft_twiddle_2_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
@@ -329,9 +331,9 @@ void fft_unshuffle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_unshuffle_2(l, a, ab, in, out, m); } );
-		auto f2 = std::async(l, [=]() { fft_unshuffle_2(l, ab, b, in, out, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_unshuffle_2(l, a, ab, in, out, m); } ();
+		[=]() { fft_unshuffle_2(l, ab, b, in, out, m); } ();
+		cilk_sync;
 	}
 }
 void fft_unshuffle_2_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m)
@@ -454,9 +456,9 @@ void fft_twiddle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_4(l, a, ab, in, out, W, nW, nWdn, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_4(l, ab, b, in, out, W, nW, nWdn, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_twiddle_4(l, a, ab, in, out, W, nW, nWdn, m); } ();
+		[=]() { fft_twiddle_4(l, ab, b, in, out, W, nW, nWdn, m); } ();
+		cilk_sync;
 	}
 }
 void fft_twiddle_4_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
@@ -544,9 +546,9 @@ void fft_unshuffle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_unshuffle_4(l, a, ab, in, out, m); } );
-		auto f2 = std::async(l, [=]() { fft_unshuffle_4(l, ab, b, in, out, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_unshuffle_4(l, a, ab, in, out, m); } ();
+		[=]() { fft_unshuffle_4(l, ab, b, in, out, m); } ();
+		cilk_sync;
 	}
 }
 void fft_unshuffle_4_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m)
@@ -828,9 +830,9 @@ void fft_twiddle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_8(l, a, ab, in, out, W, nW, nWdn, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_8(l, ab, b, in, out, W, nW, nWdn, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_twiddle_8(l, a, ab, in, out, W, nW, nWdn, m); } ();
+		[=]() { fft_twiddle_8(l, ab, b, in, out, W, nW, nWdn, m); } ();
+		cilk_sync;
 	}
 }
 void fft_twiddle_8_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
@@ -1010,9 +1012,9 @@ void fft_unshuffle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_unshuffle_8(l, a, ab, in, out, m); } );
-		auto f2 = std::async(l, [=]() { fft_unshuffle_8(l, ab, b, in, out, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_unshuffle_8(l, a, ab, in, out, m); } ();
+		[=]() { fft_unshuffle_8(l, ab, b, in, out, m); } ();
+		cilk_sync;
 	}
 }
 void fft_unshuffle_8_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m)
@@ -1670,9 +1672,9 @@ void fft_twiddle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * o
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_16(l, a, ab, in, out, W, nW, nWdn, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_16(l, ab, b, in, out, W, nW, nWdn, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_twiddle_16(l, a, ab, in, out, W, nW, nWdn, m); } ();
+		[=]() { fft_twiddle_16(l, ab, b, in, out, W, nW, nWdn, m); } ();
+		cilk_sync;
 	}
 }
 void fft_twiddle_16_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
@@ -2068,9 +2070,9 @@ void fft_unshuffle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX *
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_unshuffle_16(l, a, ab, in, out, m); } );
-		auto f2 = std::async(l, [=]() { fft_unshuffle_16(l, ab, b, in, out, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_unshuffle_16(l, a, ab, in, out, m); } ();
+	  	[=]() { fft_unshuffle_16(l, ab, b, in, out, m); } ();
+		cilk_sync;
 	}
 }
 void fft_unshuffle_16_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m)
@@ -3608,9 +3610,9 @@ void fft_twiddle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * o
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_32(l, a, ab, in, out, W, nW, nWdn, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_32(l, ab, b, in, out, W, nW, nWdn, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_twiddle_32(l, a, ab, in, out, W, nW, nWdn, m); } ();
+		[=]() { fft_twiddle_32(l, ab, b, in, out, W, nW, nWdn, m); } ();
+		cilk_sync;
 	}
 }
 void fft_twiddle_32_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
@@ -4502,9 +4504,9 @@ void fft_unshuffle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX *
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_unshuffle_32(l, a, ab, in, out, m); } );
-		auto f2 = std::async(l, [=]() { fft_unshuffle_32(l, ab, b, in, out, m); } );
-		f1.wait(); f2.wait();
+		cilk_spawn [=]() { fft_unshuffle_32(l, a, ab, in, out, m); } ();
+		[=]() { fft_unshuffle_32(l, ab, b, in, out, m); } ();
+		cilk_sync;
 	}
 }
 void fft_unshuffle_32_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m)
