@@ -11,40 +11,40 @@ typedef struct {
 #define c_re(c) ((c).re)
 #define c_im(c) ((c).im)
 
-void compute_w_coefficients(const std::launch l, int n, int a, int b, COMPLEX * W);
+void compute_w_coefficients(const inncabs::launch l, int n, int a, int b, COMPLEX * W);
 void compute_w_coefficients_seq(int n, int a, int b, COMPLEX * W);
 int factor(int n);
-void unshuffle(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int r, int m);
+void unshuffle(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int r, int m);
 void unshuffle_seq(int a, int b, COMPLEX * in, COMPLEX * out, int r, int m);
 void fft_twiddle_gen1(COMPLEX * in, COMPLEX * out, COMPLEX * W, int r, int m, int nW, int nWdnti, int nWdntm);
-void fft_twiddle_gen(const std::launch l, int i, int i1, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int r, int m);
+void fft_twiddle_gen(const inncabs::launch l, int i, int i1, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int r, int m);
 void fft_twiddle_gen_seq(int i, int i1, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int r, int m);
 void fft_base_2(COMPLEX * in, COMPLEX * out);
-void fft_twiddle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
+void fft_twiddle_2(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
 void fft_twiddle_2_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
-void fft_unshuffle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m);
+void fft_unshuffle_2(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m);
 void fft_unshuffle_2_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m);
 void fft_base_4(COMPLEX * in, COMPLEX * out);
-void fft_twiddle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
+void fft_twiddle_4(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
 void fft_twiddle_4_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
-void fft_unshuffle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m);
+void fft_unshuffle_4(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m);
 void fft_unshuffle_4_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m);
 void fft_base_8(COMPLEX * in, COMPLEX * out);
-void fft_twiddle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
+void fft_twiddle_8(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
 void fft_twiddle_8_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
-void fft_unshuffle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m);
+void fft_unshuffle_8(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m);
 void fft_unshuffle_8_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m);
 void fft_base_16(COMPLEX * in, COMPLEX * out);
-void fft_twiddle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
+void fft_twiddle_16(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
 void fft_twiddle_16_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
-void fft_unshuffle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m);
+void fft_unshuffle_16(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m);
 void fft_unshuffle_16_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m);
 void fft_base_32(COMPLEX * in, COMPLEX * out);
-void fft_twiddle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
+void fft_twiddle_32(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
 void fft_twiddle_32_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m);
-void fft_unshuffle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m);
+void fft_unshuffle_32(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m);
 void fft_unshuffle_32_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m);
-void fft_aux(const std::launch l, int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, int nW);
+void fft_aux(const inncabs::launch l, int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, int nW);
 void fft_aux_seq(int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, int nW);
 void fft(int n, COMPLEX * in, COMPLEX * out);
 void fft_seq(int n, COMPLEX * in, COMPLEX * out);
@@ -60,7 +60,7 @@ void fft_init(int n, COMPLEX *c);
 * compute the W coefficients (that is, powers of the root of 1)
 * and store them into an array.
 */
-void compute_w_coefficients(const std::launch l, int n, int a, int b, COMPLEX * W) {
+void compute_w_coefficients(const inncabs::launch l, int n, int a, int b, COMPLEX * W) {
 	double twoPiOverN;
 	int k;
 	REAL s, c;
@@ -77,8 +77,8 @@ void compute_w_coefficients(const std::launch l, int n, int a, int b, COMPLEX * 
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { compute_w_coefficients(l, n, a, ab, W); } );
-		auto f2 = std::async(l, [=]() { compute_w_coefficients(l, n, ab + 1, b, W); } );
+		auto f1 = inncabs::async(l, [=]() { compute_w_coefficients(l, n, a, ab, W); } );
+		auto f2 = inncabs::async(l, [=]() { compute_w_coefficients(l, n, ab + 1, b, W); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -124,7 +124,7 @@ int factor(int n) {
 	return n;
 }
 
-void unshuffle(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int r, int m) {
+void unshuffle(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int r, int m) {
 	int i, j;
 	int r4 = r & (~0x3);
 	const COMPLEX *ip;
@@ -150,8 +150,8 @@ void unshuffle(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, i
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { unshuffle(l, a, ab, in, out, r, m); } );
-		auto f2 = std::async(l, [=]() { unshuffle(l, ab, b, in, out, r, m); } );
+		auto f1 = inncabs::async(l, [=]() { unshuffle(l, a, ab, in, out, r, m); } );
+		auto f2 = inncabs::async(l, [=]() { unshuffle(l, ab, b, in, out, r, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -212,13 +212,13 @@ void fft_twiddle_gen1(COMPLEX * in, COMPLEX * out, COMPLEX * W, int r, int m, in
 	}
 }
 
-void fft_twiddle_gen(const std::launch l, int i, int i1, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int r, int m) {
+void fft_twiddle_gen(const inncabs::launch l, int i, int i1, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int r, int m) {
 	if (i == i1 - 1) {
 		fft_twiddle_gen1(in + i, out + i, W, r, m, nW, nWdn * i, nWdn * m);
 	} else {
 		int i2 = (i + i1) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_gen(l, i, i2, in, out, W, nW, nWdn, r, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_gen(l, i2, i1, in, out, W, nW, nWdn, r, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_twiddle_gen(l, i, i2, in, out, W, nW, nWdn, r, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_twiddle_gen(l, i2, i1, in, out, W, nW, nWdn, r, m); } );
 		f1.wait(); f2.wait();
 	}
 	return;
@@ -249,7 +249,7 @@ void fft_base_2(COMPLEX * in, COMPLEX * out)
 	c_re(out[1]) = (r1_0 - r1_1);
 	c_im(out[1]) = (i1_0 - i1_1);
 }
-void fft_twiddle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
+void fft_twiddle_2(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
 {
 	int l1, i;
 	COMPLEX *jp, *kp;
@@ -277,8 +277,8 @@ void fft_twiddle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_2(l, a, ab, in, out, W, nW, nWdn, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_2(l, ab, b, in, out, W, nW, nWdn, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_twiddle_2(l, a, ab, in, out, W, nW, nWdn, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_twiddle_2(l, ab, b, in, out, W, nW, nWdn, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -314,7 +314,7 @@ void fft_twiddle_2_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, i
 		fft_twiddle_2_seq(ab, b, in, out, W, nW, nWdn, m);
 	}
 }
-void fft_unshuffle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m)
+void fft_unshuffle_2(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m)
 {
 	int i;
 	const COMPLEX *ip;
@@ -329,8 +329,8 @@ void fft_unshuffle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_unshuffle_2(l, a, ab, in, out, m); } );
-		auto f2 = std::async(l, [=]() { fft_unshuffle_2(l, ab, b, in, out, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_unshuffle_2(l, a, ab, in, out, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_unshuffle_2(l, ab, b, in, out, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -392,7 +392,7 @@ void fft_base_4(COMPLEX * in, COMPLEX * out)
 	c_re(out[3]) = (r1_2 - i1_3);
 	c_im(out[3]) = (i1_2 + r1_3);
 }
-void fft_twiddle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
+void fft_twiddle_4(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
 {
 	int l1, i;
 	COMPLEX *jp, *kp;
@@ -454,8 +454,8 @@ void fft_twiddle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_4(l, a, ab, in, out, W, nW, nWdn, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_4(l, ab, b, in, out, W, nW, nWdn, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_twiddle_4(l, a, ab, in, out, W, nW, nWdn, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_twiddle_4(l, ab, b, in, out, W, nW, nWdn, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -525,7 +525,7 @@ void fft_twiddle_4_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, i
 		fft_twiddle_4_seq(ab, b, in, out, W, nW, nWdn, m);
 	}
 }
-void fft_unshuffle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m)
+void fft_unshuffle_4(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m)
 {
 	int i;
 	const COMPLEX *ip;
@@ -544,8 +544,8 @@ void fft_unshuffle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_unshuffle_4(l, a, ab, in, out, m); } );
-		auto f2 = std::async(l, [=]() { fft_unshuffle_4(l, ab, b, in, out, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_unshuffle_4(l, a, ab, in, out, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_unshuffle_4(l, ab, b, in, out, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -682,7 +682,7 @@ void fft_base_8(COMPLEX * in, COMPLEX * out)
 		c_im(out[7]) = (i1_6 + tmpi);
 	}
 }
-void fft_twiddle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
+void fft_twiddle_8(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
 {
 	int l1, i;
 	COMPLEX *jp, *kp;
@@ -828,8 +828,8 @@ void fft_twiddle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_8(l, a, ab, in, out, W, nW, nWdn, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_8(l, ab, b, in, out, W, nW, nWdn, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_twiddle_8(l, a, ab, in, out, W, nW, nWdn, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_twiddle_8(l, ab, b, in, out, W, nW, nWdn, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -983,7 +983,7 @@ void fft_twiddle_8_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, i
 		fft_twiddle_8_seq(ab, b, in, out, W, nW, nWdn, m);
 	}
 }
-void fft_unshuffle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m)
+void fft_unshuffle_8(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m)
 {
 	int i;
 	const COMPLEX *ip;
@@ -1010,8 +1010,8 @@ void fft_unshuffle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_unshuffle_8(l, a, ab, in, out, m); } );
-		auto f2 = std::async(l, [=]() { fft_unshuffle_8(l, ab, b, in, out, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_unshuffle_8(l, a, ab, in, out, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_unshuffle_8(l, ab, b, in, out, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -1324,7 +1324,7 @@ void fft_base_16(COMPLEX * in, COMPLEX * out)
 		c_im(out[15]) = (i1_14 + tmpi);
 	}
 }
-void fft_twiddle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
+void fft_twiddle_16(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
 {
 	int l1, i;
 	COMPLEX *jp, *kp;
@@ -1670,8 +1670,8 @@ void fft_twiddle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * o
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_16(l, a, ab, in, out, W, nW, nWdn, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_16(l, ab, b, in, out, W, nW, nWdn, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_twiddle_16(l, a, ab, in, out, W, nW, nWdn, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_twiddle_16(l, ab, b, in, out, W, nW, nWdn, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -2025,7 +2025,7 @@ void fft_twiddle_16_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, 
 		fft_twiddle_16_seq(ab, b, in, out, W, nW, nWdn, m);
 	}
 }
-void fft_unshuffle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m)
+void fft_unshuffle_16(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m)
 {
 	int i;
 	const COMPLEX *ip;
@@ -2068,8 +2068,8 @@ void fft_unshuffle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX *
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_unshuffle_16(l, a, ab, in, out, m); } );
-		auto f2 = std::async(l, [=]() { fft_unshuffle_16(l, ab, b, in, out, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_unshuffle_16(l, a, ab, in, out, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_unshuffle_16(l, ab, b, in, out, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -2798,7 +2798,7 @@ void fft_base_32(COMPLEX * in, COMPLEX * out)
 		c_im(out[31]) = (i1_30 + tmpi);
 	}
 }
-void fft_twiddle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
+void fft_twiddle_32(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int nW, int nWdn, int m)
 {
 	int l1, i;
 	COMPLEX *jp, *kp;
@@ -3608,8 +3608,8 @@ void fft_twiddle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * o
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_twiddle_32(l, a, ab, in, out, W, nW, nWdn, m); } );
-		auto f2 = std::async(l, [=]() { fft_twiddle_32(l, ab, b, in, out, W, nW, nWdn, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_twiddle_32(l, a, ab, in, out, W, nW, nWdn, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_twiddle_32(l, ab, b, in, out, W, nW, nWdn, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -4427,7 +4427,7 @@ void fft_twiddle_32_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, 
 		fft_twiddle_32_seq(ab, b, in, out, W, nW, nWdn, m);
 	}
 }
-void fft_unshuffle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m)
+void fft_unshuffle_32(const inncabs::launch l, int a, int b, COMPLEX * in, COMPLEX * out, int m)
 {
 	int i;
 	const COMPLEX *ip;
@@ -4502,8 +4502,8 @@ void fft_unshuffle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX *
 		}
 	} else {
 		int ab = (a + b) / 2;
-		auto f1 = std::async(l, [=]() { fft_unshuffle_32(l, a, ab, in, out, m); } );
-		auto f2 = std::async(l, [=]() { fft_unshuffle_32(l, ab, b, in, out, m); } );
+		auto f1 = inncabs::async(l, [=]() { fft_unshuffle_32(l, a, ab, in, out, m); } );
+		auto f2 = inncabs::async(l, [=]() { fft_unshuffle_32(l, ab, b, in, out, m); } );
 		f1.wait(); f2.wait();
 	}
 }
@@ -4591,7 +4591,7 @@ void fft_unshuffle_32_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m)
 /*
 * Recursive complex FFT on the n complex components of the array in:
 * basic Cooley-Tukey algorithm, with some improvements for
-* n power of two. The result is placed in the array out. n is arbitrary. 
+* n power of two. The result is placed in the array out. n is arbitrary.
 * The algorithm runs in time O(n*(r1 + ... + rk)) where r1, ..., rk
 * are prime numbers, and r1 * r2 * ... * rk = n.
 *
@@ -4604,7 +4604,7 @@ void fft_unshuffle_32_seq(int a, int b, COMPLEX * in, COMPLEX * out, int m)
 * nW: size of W, that is, size of the original transform
 *
 */
-void fft_aux(const std::launch l, int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, int nW)
+void fft_aux(const inncabs::launch l, int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, int nW)
 {
 	int r, m;
 	int k;
@@ -4630,7 +4630,7 @@ void fft_aux(const std::launch l, int n, COMPLEX * in, COMPLEX * out, int *facto
 		fft_base_2(in, out);
 		return;
 	}
-	/* 
+	/*
 	* the cases n == 3, n == 5, and maybe 7 should be implemented as well
 	*/
 
@@ -4638,9 +4638,9 @@ void fft_aux(const std::launch l, int n, COMPLEX * in, COMPLEX * out, int *facto
 	m = n / r;
 
 	if (r < n) {
-		/* 
+		/*
 		* split the DFT of length n into r DFTs of length n/r,  and
-		* recurse 
+		* recurse
 		*/
 		if (r == 32) {
 			fft_unshuffle_32(l, 0, m, in, out, m);
@@ -4659,15 +4659,15 @@ void fft_aux(const std::launch l, int n, COMPLEX * in, COMPLEX * out, int *facto
 		for (k = 0; k < n; k += m) {
 			fft_aux(l, m, out + k, in + k, factors + 1, W, nW);
 		}
-		//std::vector<std::future<void>> futures;
+		//std::vector<inncabs::future<void>> futures;
 		//for (k = 0; k < n; k += m) {
-		//	futures.push_back( std::async(l, fft_aux, l, m, out + k, in + k, factors + 1, W, nW) );
+		//	futures.push_back( inncabs::async(l, fft_aux, l, m, out + k, in + k, factors + 1, W, nW) );
 		//}
 		//for(auto &f : futures) {
 		//	f.wait();
 		//}
 	}
-	/* 
+	/*
 	* now multiply by the twiddle factors, and perform m FFTs
 	* of length r
 	*/
@@ -4713,7 +4713,7 @@ void fft_aux_seq(int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, 
 		fft_base_2(in, out);
 		return;
 	}
-	/* 
+	/*
 	* the cases n == 3, n == 5, and maybe 7 should be implemented as well
 	*/
 
@@ -4721,9 +4721,9 @@ void fft_aux_seq(int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, 
 	m = n / r;
 
 	if (r < n) {
-		/* 
+		/*
 		* split the DFT of length n into r DFTs of length n/r,  and
-		* recurse 
+		* recurse
 		*/
 		if      (r == 32) fft_unshuffle_32_seq(0, m, in, out, m);
 		else if (r == 16) fft_unshuffle_16_seq(0, m, in, out, m);
@@ -4736,7 +4736,7 @@ void fft_aux_seq(int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, 
 			fft_aux_seq(m, out + k, in + k, factors + 1, W, nW);
 		}
 	}
-	/* 
+	/*
 	* now multiply by the twiddle factors, and perform m FFTs
 	* of length r
 	*/
@@ -4752,7 +4752,7 @@ void fft_aux_seq(int n, COMPLEX * in, COMPLEX * out, int *factors, COMPLEX * W, 
 /*
 * user interface for fft_aux
 */
-void fft(const std::launch lt, int n, COMPLEX * in, COMPLEX * out) {
+void fft(const inncabs::launch lt, int n, COMPLEX * in, COMPLEX * out) {
 	int factors[40];		/* allows FFTs up to at least 3^40 */
 	int *p = factors;
 	int l = n;
@@ -4763,10 +4763,10 @@ void fft(const std::launch lt, int n, COMPLEX * in, COMPLEX * out) {
 	W = (COMPLEX *) malloc((n + 1) * sizeof(COMPLEX));
 	compute_w_coefficients(lt, n, 0, n / 2, W);
 	inncabs::message(" completed!\n");
-	
-	/* 
+
+	/*
 	* find factors of n, first 8, then 4 and then primes in ascending
-	* order 
+	* order
 	*/
 	do {
 		r = factor(l);
@@ -4777,7 +4777,7 @@ void fft(const std::launch lt, int n, COMPLEX * in, COMPLEX * out) {
 	inncabs::message("Computing FFT ");
 	fft_aux(lt, n, in, out, factors, W, n);
 	inncabs::message(" completed!\n");
-	
+
 	free(W);
 	return;
 }
@@ -4791,10 +4791,10 @@ void fft_seq(int n, COMPLEX * in, COMPLEX * out) {
 
 	W = (COMPLEX *) malloc((n + 1) * sizeof(COMPLEX));
 	compute_w_coefficients_seq(n, 0, n / 2, W);
-	
-	/* 
+
+	/*
 	* find factors of n, first 8, then 4 and then primes in ascending
-	* order 
+	* order
 	*/
 	do {
 		r = factor(l);
@@ -4803,7 +4803,7 @@ void fft_seq(int n, COMPLEX * in, COMPLEX * out) {
 	} while (l > 1);
 
 	fft_aux_seq(n, in, out, factors, W, n);
-	
+
 	free(W);
 	return;
 }
@@ -4817,7 +4817,7 @@ bool test_correctness(int n, COMPLEX *out1, COMPLEX *out2) {
 			(c_re(out1[i]) - c_re(out2[i])) +
 			(c_im(out1[i]) - c_im(out2[i])) *
 			(c_im(out1[i]) - c_im(out2[i])));
-		d =  sqrt(c_re(out2[i]) * c_re(out2[i]) + 
+		d =  sqrt(c_re(out2[i]) * c_re(out2[i]) +
 			c_im(out2[i]) * c_im(out2[i]));
 		if (d < -1.0e-10 || d > 1.0e-10) a /= d;
 		if (a > error) error = a;

@@ -67,7 +67,7 @@ static int starts(int id, int shape, coor *NWS, struct cell *cells) {
 		/* if there is only a horizontal dependence */
 	} else if (left >= 0) {
 
-		/* highest initial row is top of cell to the left - rows */ 
+		/* highest initial row is top of cell to the left - rows */
 		top = max(cells[left].top - rows + 1, 0);
 		/* lowest initial row is bottom of cell to the left */
 		bot = min(cells[left].bot, ROWS);
@@ -168,20 +168,20 @@ static void write_outputs() {
 
 	for(int i = 0; i < MIN_FOOTPRINT[0]; i++) {
 		for(int j = 0; j < MIN_FOOTPRINT[1]; j++) {
-			if(BEST_BOARD[i][j] == 0) { 
+			if(BEST_BOARD[i][j] == 0) {
 				ss << " ";
 			}
 			else {
 				ss << (char)(((int)BEST_BOARD[i][j]) - 1 + ((int)'A'));
 			}
-		} 
+		}
 		ss << "\n";
-	}  
+	}
 
 	inncabs::message(ss.str());
 }
 
-int add_cell(const std::launch l, int id, coor FOOTPRINT, ibrd BOARD, struct cell *CELLS) {
+int add_cell(const inncabs::launch l, int id, coor FOOTPRINT, ibrd BOARD, struct cell *CELLS) {
 	int  i, j, nn, nnl;
 
 	coor NWS[DMAX];
@@ -189,8 +189,8 @@ int add_cell(const std::launch l, int id, coor FOOTPRINT, ibrd BOARD, struct cel
 	nnl = 0;
 	std::atomic_int_least32_t nnc { 0 };
 
-	std::mutex m;
-	std::vector<std::future<void>> futures;
+	inncabs::mutex m;
+	std::vector<inncabs::future<void>> futures;
 
 	/* for each possible shape */
 	for (i = 0; i < CELLS[id].n; i++) {
@@ -199,7 +199,7 @@ int add_cell(const std::launch l, int id, coor FOOTPRINT, ibrd BOARD, struct cel
 		nnl += nn;
 		/* for all possible locations */
 		for (j = 0; j < nn; j++) {
-			futures.push_back( std::async(l, [&, i, j, id, nn]() mutable {
+			futures.push_back( inncabs::async(l, [&, i, j, id, nn]() mutable {
 				ibrd board;
 				coor footprint;
 				struct cell* cells = (struct cell*)alloca((N + 1)*sizeof(struct cell));
@@ -281,7 +281,7 @@ void floorplan_init(const char *filename) {
 	}
 }
 
-void compute_floorplan(const std::launch l) {
+void compute_floorplan(const inncabs::launch l) {
 	coor footprint;
 	/* footprint of initial board is zero */
 	footprint[0] = 0;

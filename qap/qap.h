@@ -54,7 +54,7 @@ void print(solution* solution) {
 	printf("-%d", solution->pos);
 }
 
-int solve_rec(const std::launch l, problem* problem, solution* partial, int plant, int used_mask, int cur_cost, std::atomic<int>& best_known) {
+int solve_rec(const inncabs::launch l, problem* problem, solution* partial, int plant, int used_mask, int cur_cost, std::atomic<int>& best_known) {
 	// terminal case
 	if(plant >= problem->size) {
 		return cur_cost;
@@ -64,12 +64,12 @@ int solve_rec(const std::launch l, problem* problem, solution* partial, int plan
 		return best_known;
 	}
 
-	std::vector<std::future<void>> futures;
+	std::vector<inncabs::future<void>> futures;
 
 	// fix current position
 	for(int i=0; i<problem->size; i++) {
 		// check whether current spot is a free spot
-		futures.push_back(std::async(l, [=, &best_known]() {
+		futures.push_back(inncabs::async(l, [=, &best_known]() {
 			if(!(1<<i & used_mask)) {
 				// extend solution
 				solution tmp = {partial, i};
@@ -100,7 +100,7 @@ int solve_rec(const std::launch l, problem* problem, solution* partial, int plan
 					//   |--- read best ---|         |--- check ---|    |------- update if cur_best is better ------------|
 					do { best = best_known; } while (cur_best < best && best_known.compare_exchange_strong(best, cur_best));
 				}
-			} 
+			}
 		}));
 	}
 
@@ -111,7 +111,7 @@ int solve_rec(const std::launch l, problem* problem, solution* partial, int plan
 	return best_known;
 }
 
-int solve(const std::launch l, problem* problem) {
+int solve(const inncabs::launch l, problem* problem) {
 	int res;
 	solution* map = empty();
 	std::atomic<int> best{ 1 << 30 };

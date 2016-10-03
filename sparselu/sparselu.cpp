@@ -1,3 +1,12 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#if defined(INNCABS_USE_HPX_FUTURIZED)
+#include <hpx/include/parallel_for_each.hpp>
+#include <hpx/include/parallel_executor_parameters.hpp>
+#endif
+#endif
+
 #include "../include/inncabs.h"
 
 /*
@@ -15,14 +24,14 @@ int main(int argc, char** argv) {
 	if(argc > 2) arg_size_2 = atoi(argv[2]);
 
 	std::stringstream ss;
-	ss << "SparseLU Factorization (" << arg_size_1 << "x" << arg_size_1 
+	ss << "SparseLU Factorization (" << arg_size_1 << "x" << arg_size_1
 	   << " matrix with " << arg_size_2 << "x" << arg_size_2 << " blocks) ";
-	
+
 	sparselu_init(&SEQ, "serial");
 	sparselu_seq_call(SEQ);
 
 	inncabs::run_all(
-		[&](const std::launch l) {
+		[&](const inncabs::launch l) {
 			sparselu_par_call(l, BENCH);
 			return 1;
 		},
@@ -32,4 +41,5 @@ int main(int argc, char** argv) {
 		ss.str(),
 		[&] { sparselu_init(&BENCH, "benchmark"); }
 		);
+    return 0;
 }

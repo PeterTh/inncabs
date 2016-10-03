@@ -1,3 +1,8 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
 /*
@@ -23,16 +28,17 @@ int main(int argc, char** argv) {
 
 	std::stringstream ss;
 	ss << "Sort with N = " << arg_size << ", cutoffs = " << arg_cutoff_1 << " / " << arg_cutoff_2 << " / " << arg_cutoff_3;
-	
+
 	inncabs::run_all(
-		[&](const std::launch l) {
+		[&](const inncabs::launch l) {
 			sort_par(l);
 			return 1;
 		},
 		[&](int result) {
-			return sort_verify(); 
+			return sort_verify();
 		},
 		ss.str(),
 		[&] { sort_init(); }
 		);
+    return 0;
 }

@@ -83,7 +83,7 @@ void MultiplyByDivideAndConquer(REAL *C, REAL *A, REAL *B,
 				     unsigned RowWidthB,
 				     int AdditiveMode
 				    );
-void OptimizedStrassenMultiply_par(const std::launch l, REAL *C, REAL *A, REAL *B, unsigned MatrixSize,
+void OptimizedStrassenMultiply_par(const inncabs::launch l, REAL *C, REAL *A, REAL *B, unsigned MatrixSize,
      unsigned RowWidthC, unsigned RowWidthA, unsigned RowWidthB, int Depth);
 void OptimizedStrassenMultiply_seq(REAL *C, REAL *A, REAL *B, unsigned MatrixSize,
      unsigned RowWidthC, unsigned RowWidthA, unsigned RowWidthB, int Depth);
@@ -104,7 +104,7 @@ bool compare_matrix(int n, REAL *A, int an, REAL *B, int bn);
 void matrixmul(int n, REAL *A, int an, REAL *B, int bn, REAL *C, int cn) {
 	REAL s;
 
-	for(int i = 0; i < n; ++i) { 
+	for(int i = 0; i < n; ++i) {
 		for(int j = 0; j < n; ++j) {
 			s = 0.0;
 			for(int k = 0; k < n; ++k) s += ELEM(A, an, i, k) * ELEM(B, bn, k, j);
@@ -136,7 +136,7 @@ void matrixmul(int n, REAL *A, int an, REAL *B, int bn, REAL *C, int cn) {
 **
 *****************************************************************************/
 void FastNaiveMatrixMultiply(REAL *C, REAL *A, REAL *B, unsigned MatrixSize,
-							 unsigned RowWidthC, unsigned RowWidthA, unsigned RowWidthB) { 
+							 unsigned RowWidthC, unsigned RowWidthA, unsigned RowWidthB) {
 	/* Assumes size of real is 8 bytes */
 	PTR RowWidthBInBytes = RowWidthB  << 3;
 	PTR RowWidthAInBytes = RowWidthA << 3;
@@ -157,7 +157,7 @@ void FastNaiveMatrixMultiply(REAL *C, REAL *A, REAL *B, unsigned MatrixSize,
 			REAL Sum4 = FirstARowValue * (*(BColumnStart+4));
 			REAL Sum5 = FirstARowValue * (*(BColumnStart+5));
 			REAL Sum6 = FirstARowValue * (*(BColumnStart+6));
-			REAL Sum7 = FirstARowValue * (*(BColumnStart+7));	
+			REAL Sum7 = FirstARowValue * (*(BColumnStart+7));
 
 			unsigned Products;
 			for(Products = 1; Products < MatrixSize; Products++) {
@@ -170,7 +170,7 @@ void FastNaiveMatrixMultiply(REAL *C, REAL *A, REAL *B, unsigned MatrixSize,
 				Sum4 += ARowValue * (*(BColumnStart+4));
 				Sum5 += ARowValue * (*(BColumnStart+5));
 				Sum6 += ARowValue * (*(BColumnStart+6));
-				Sum7 += ARowValue * (*(BColumnStart+7));	
+				Sum7 += ARowValue * (*(BColumnStart+7));
 			}
 			ARowStart = (ARowStart) - MatrixWidthInBytes/sizeof(REAL);
 
@@ -212,7 +212,7 @@ void FastNaiveMatrixMultiply(REAL *C, REAL *A, REAL *B, unsigned MatrixSize,
 **
 *****************************************************************************/
 void FastAdditiveNaiveMatrixMultiply(REAL *C, REAL *A, REAL *B, unsigned MatrixSize,
-									 unsigned RowWidthC, unsigned RowWidthA, unsigned RowWidthB) { 
+									 unsigned RowWidthC, unsigned RowWidthA, unsigned RowWidthB) {
 	/* Assumes size of real is 8 bytes */
 	PTR RowWidthBInBytes = RowWidthB  << 3;
 	PTR RowWidthAInBytes = RowWidthA << 3;
@@ -232,7 +232,7 @@ void FastAdditiveNaiveMatrixMultiply(REAL *C, REAL *A, REAL *B, unsigned MatrixS
 			REAL Sum4 = *(C+4);
 			REAL Sum5 = *(C+5);
 			REAL Sum6 = *(C+6);
-			REAL Sum7 = *(C+7);	
+			REAL Sum7 = *(C+7);
 
 			unsigned Products;
 			for(Products = 0; Products < MatrixSize; Products++) {
@@ -622,7 +622,7 @@ void OptimizedStrassenMultiply_seq(REAL *C, REAL *A, REAL *B, unsigned MatrixSiz
 	free(StartHeap);
 }
 
-void OptimizedStrassenMultiply_par(const std::launch l, REAL *C, REAL *A, REAL *B, unsigned MatrixSize, unsigned RowWidthC, unsigned RowWidthA, unsigned RowWidthB, int Depth) {
+void OptimizedStrassenMultiply_par(const inncabs::launch l, REAL *C, REAL *A, REAL *B, unsigned MatrixSize, unsigned RowWidthC, unsigned RowWidthA, unsigned RowWidthB, int Depth) {
 	unsigned QuadrantSize = MatrixSize >> 1; /* MatixSize / 2 */
 	unsigned QuadrantSizeInBytes = sizeof(REAL) * QuadrantSize * QuadrantSize + 32;
 	unsigned Column, Row;
@@ -747,28 +747,28 @@ void OptimizedStrassenMultiply_par(const std::launch l, REAL *C, REAL *A, REAL *
 		MatrixOffsetB += RowIncrementB;
 	} /* end column loop */
 
-	std::vector<std::future<void>> futures;
+	std::vector<inncabs::future<void>> futures;
 
 	/* M2 = A11 x B11 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, M2, A11, B11, QuadrantSize, QuadrantSize, RowWidthA, RowWidthB, Depth+1));
+	futures.push_back(inncabs::async(l, OptimizedStrassenMultiply_par, l, M2, A11, B11, QuadrantSize, QuadrantSize, RowWidthA, RowWidthB, Depth+1));
 
 	/* M5 = S1 * S5 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, M5, S1, S5, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth+1));
+	futures.push_back(inncabs::async(l, OptimizedStrassenMultiply_par, l, M5, S1, S5, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth+1));
 
 	/* Step 1 of T1 = S2 x S6 + M2 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, T1sMULT, S2, S6,  QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth+1));
+	futures.push_back(inncabs::async(l, OptimizedStrassenMultiply_par, l, T1sMULT, S2, S6,  QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth+1));
 
 	/* Step 1 of T2 = T1 + S3 x S7 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, C22, S3, S7, QuadrantSize, RowWidthC /*FIXME*/, QuadrantSize, QuadrantSize, Depth+1));
+	futures.push_back(inncabs::async(l, OptimizedStrassenMultiply_par, l, C22, S3, S7, QuadrantSize, RowWidthC /*FIXME*/, QuadrantSize, QuadrantSize, Depth+1));
 
 	/* Step 1 of C11 = M2 + A12 * B21 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, C11, A12, B21, QuadrantSize, RowWidthC, RowWidthA, RowWidthB, Depth+1));
+	futures.push_back(inncabs::async(l, OptimizedStrassenMultiply_par, l, C11, A12, B21, QuadrantSize, RowWidthC, RowWidthA, RowWidthB, Depth+1));
 
 	/* Step 1 of C12 = S4 x B22 + T1 + M5 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, C12, S4, B22, QuadrantSize, RowWidthC, QuadrantSize, RowWidthB, Depth+1));
+	futures.push_back(inncabs::async(l, OptimizedStrassenMultiply_par, l, C12, S4, B22, QuadrantSize, RowWidthC, QuadrantSize, RowWidthB, Depth+1));
 
 	/* Step 1 of C21 = T2 - A22 * S8 */
-	futures.push_back(std::async(l, OptimizedStrassenMultiply_par, l, C21, A22, S8, QuadrantSize, RowWidthC, RowWidthA, QuadrantSize, Depth+1));
+	futures.push_back(inncabs::async(l, OptimizedStrassenMultiply_par, l, C21, A22, S8, QuadrantSize, RowWidthC, RowWidthA, QuadrantSize, Depth+1));
 
 	/**********************************************
 	** Synchronization Point
@@ -837,12 +837,12 @@ void OptimizedStrassenMultiply_par(const std::launch l, REAL *C, REAL *A, REAL *
 }
 
 /*
-* Set an n by n matrix A to random values. 
+* Set an n by n matrix A to random values.
 */
 void init_matrix(int n, REAL *A, int an) {
 	for(int i = 0; i < n; ++i)
-		for(int j = 0; j < n; ++j) 
-			ELEM(A, an, i, j) = ((double) rand()) / (double) RAND_MAX; 
+		for(int j = 0; j < n; ++j)
+			ELEM(A, an, i, j) = ((double) rand()) / (double) RAND_MAX;
 }
 
 /*
@@ -854,7 +854,7 @@ bool compare_matrix(int n, REAL *A, int an, REAL *B, int bn) {
 		for(int j = 0; j < n; ++j) {
 			/* compute the relative error c */
 			REAL c = ELEM(A, an, i, j) - ELEM(B, bn, i, j);
-			if(c < 0.0) 
+			if(c < 0.0)
 				c = -c;
 
 			c = c / ELEM(A, an, i, j);

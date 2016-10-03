@@ -1,8 +1,13 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
 #include "qap.h"
 
-int main(int argc, char** argv) {	
+int main(int argc, char** argv) {
 	const char* problem_file = argc>1 ? argv[1] : "input/qap/chr10a.dat";
 
 	// load problem
@@ -12,7 +17,7 @@ int main(int argc, char** argv) {
 	ss << "Quadratic Assignment Solver (" << problem_file << ")";
 
 	inncabs::run_all(
-		[&](const std::launch l) {
+		[&](const inncabs::launch l) {
 			return solve(l, p);
 		},
 		[&](int result) {
@@ -23,4 +28,5 @@ int main(int argc, char** argv) {
 
 	// free problem
 	qap_del(p);
+    return 0;
 }

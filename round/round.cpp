@@ -1,3 +1,8 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
 #include <random>
@@ -5,13 +10,13 @@
 class Philosopher {
     std::mt19937_64 eng_{std::random_device{}()};
 
-    std::mutex& left_fork_;
-    std::mutex& right_fork_;
+    inncabs::mutex& left_fork_;
+    inncabs::mutex& right_fork_;
     std::chrono::milliseconds eat_time_{0};
 
 public:
     static std::chrono::milliseconds full;
-    Philosopher(std::mutex& left, std::mutex& right);
+    Philosopher(inncabs::mutex& left, inncabs::mutex& right);
     void dine();
 
 private:
@@ -22,7 +27,7 @@ private:
 
 std::chrono::milliseconds Philosopher::full;
 
-Philosopher::Philosopher(std::mutex& left, std::mutex& right)
+Philosopher::Philosopher(inncabs::mutex& left, inncabs::mutex& right)
     : left_fork_(left)
     , right_fork_(right)
 {}
@@ -32,7 +37,7 @@ void Philosopher::dine() {
 }
 
 void Philosopher::eat() {
-    using Lock = std::unique_lock<std::mutex>;
+    using Lock = std::unique_lock<inncabs::mutex>;
     Lock first;
     Lock second;
     if (flip_coin())
@@ -59,7 +64,7 @@ bool Philosopher::flip_coin() {
 
 std::chrono::milliseconds Philosopher::get_eat_duration() {
     std::uniform_int_distribution<> ms(1, 10);
-    return std::min(std::chrono::milliseconds(ms(eng_)), full - eat_time_);
+    return (std::min)(std::chrono::milliseconds(ms(eng_)), full - eat_time_);
 }
 
 int main(int argc, char** argv) {
@@ -68,17 +73,17 @@ int main(int argc, char** argv) {
 	Philosopher::full = std::chrono::milliseconds(50);
 	if(argc>2) Philosopher::full = std::chrono::milliseconds(std::atoi(argv[2]));
 
-	std::vector<std::mutex> table(n);
+	std::vector<inncabs::mutex> table(n);
 	std::vector<Philosopher> diners;
 
 	std::stringstream ss;
 	ss << "Dining Philosophers (N = " << n << ")";
 
 	inncabs::run_all(
-		[&](const std::launch l) {
-			std::vector<std::future<void>> futures;
+		[&](const inncabs::launch l) {
+			std::vector<inncabs::future<void>> futures;
 			for(auto& d : diners) {
-				futures.push_back(std::async(l, [&] { d.dine(); }));
+				futures.push_back(inncabs::async(l, [&] { d.dine(); }));
 			}
 			for(auto& f : futures) {
 				f.wait();
@@ -97,4 +102,5 @@ int main(int argc, char** argv) {
 			}
 		}
 	);
+    return 0;
 }

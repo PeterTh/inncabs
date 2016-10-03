@@ -1,3 +1,8 @@
+#if defined(INNCABS_USE_HPX)
+#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
+#endif
+
 #include "../include/inncabs.h"
 
 /*
@@ -14,7 +19,7 @@ int main(int argc, char** argv) {
 
 	std::stringstream ss;
 	ss << "FFT N=" << n;
-	
+
 	COMPLEX *in = NULL, *out_seq = NULL, *out = NULL;
 	in = (COMPLEX*)malloc(n * sizeof(COMPLEX));
 	out_seq = (COMPLEX*)malloc(n * sizeof(COMPLEX));
@@ -24,12 +29,12 @@ int main(int argc, char** argv) {
 	fft_seq(n, in, out_seq);
 
 	inncabs::run_all(
-		[&](const std::launch l) {
+		[&](const inncabs::launch l) {
 			fft(l, n, in, out);
 			return 1;
 		},
 		[&](int result) {
-			return test_correctness(n, out, out_seq); 
+			return test_correctness(n, out, out_seq);
 		},
 		ss.str(),
 		[&] { fft_init(n, in); }
@@ -38,4 +43,6 @@ int main(int argc, char** argv) {
 	free(in);
 	free(out_seq);
 	free(out);
+
+    return 0;
 }
