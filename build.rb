@@ -1,7 +1,7 @@
 require 'color.rb'
 
-COMPILER = "/software-local/insieme-libs/with_gcc_5.2.0/gcc-5.2.0/bin/g++"
-CPPFLAGS = "-std=c++14 -Wall -L /software-local/insieme-libs/with_gcc_5.2.0/gcc-5.2.0/lib64 -lpthread -I lib/parec/code/include -fmax-errors=2"
+COMPILER = "g++"
+CPPFLAGS = "-std=c++14 -Wall -lpthread -I lib/allscale_api/code/api/include -I lib/allscale_api/code/utils/include -fmax-errors=2"
 
 debug = ARGV.include?("--dbg")
 parallel = ARGV.include?("--par")

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "parec/ops.h"
+#include "allscale/api/core/prec.h"
+#include "allscale/api/user/algorithm/pfor.h"
 
 void del(int k, int *print_ptr, int *last_print, int *displ);
 void add(int v, int *print_ptr, int *last_print, int *displ);
@@ -424,7 +425,7 @@ int pairalign(const std::launch l) {
 		} // for (j)
 	} // for (i)
 
-	parec::pfor<parec::loop_policy::queue>(params, [](const pairalign_params& p) {
+	allscale::api::user::algorithm::pfor(params, [](const pairalign_params& p) {
 		int i = p.i;
 		int m = p.m;
 		int sj = p.sj;

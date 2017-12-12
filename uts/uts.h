@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parec/core.h"
+#include "allscale/api/core/prec.h"
 
 /**********************************************************************************************/
 /*  This program is part of the Barcelona OpenMP Tasks Suite                                  */
@@ -240,7 +240,7 @@ unsigned long long parTreeSearch(params p, const T& rec_call) {
 	n = (Node*)alloca(sizeof(Node)*numChildren);
 	Node *nodePtr;
 	unsigned long long subtreesize = 1;
-	std::vector<decltype(rec_call(p))> futures;
+	std::vector<decltype(allscale::api::core::run(rec_call(p)))> futures;
 
 	// Recurse on the children
 	for(int i = 0; i < numChildren; i++) {
@@ -268,7 +268,7 @@ unsigned long long parTreeSearch(params p, const T& rec_call) {
 unsigned long long parallel_uts(const std::launch l, Node *root) {
 	root->numChildren = uts_numChildren(root);
 
-	auto p_uts = parec::prec(
+	auto p_uts = allscale::api::core::prec(
 		[](params p) { return p.numChildren == 0; },
 		[](params p) { return 1ull; },
 		[](params p, const auto& rec_call) { return parTreeSearch(p, rec_call); }

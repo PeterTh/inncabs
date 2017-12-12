@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parec/core.h"
+#include "allscale/api/core/prec.h"
 
 /*
  Adapted from the Insieme compiler "pyramids" test case.
@@ -184,35 +184,31 @@ void compute_pyramid(const params& p, const Comp_P& compute_pyramid_step, const 
 	int uy = y - h;
 	int ly = y + h;
 
-	// compute 4 base-pyramids (parallel)
-	auto f1 = compute_pyramid_step({ A, B, ux, uy, d });
-	auto f2 = compute_pyramid_step({ A, B, ux, ly, d });
-	auto f3 = compute_pyramid_step({ A, B, lx, uy, d });
-	auto f4 = compute_pyramid_step({ A, B, lx, ly, d });
+    allscale::api::core::sequential(
 
-	// #pragma omp taskwait
-	f1.get();
-	f2.get();
-	f3.get();
-	f4.get();
+    	// compute 4 base-pyramids (parallel)
+        allscale::api::core::parallel(
+	        compute_pyramid_step({ A, B, ux, uy, d }),
+            compute_pyramid_step({ A, B, ux, ly, d }),
+            compute_pyramid_step({ A, B, lx, uy, d }),
+            compute_pyramid_step({ A, B, lx, ly, d })
+        ),
 
-	// compute 4 wedges (parallel)
-	f1 = compute_wedge_x_step({ A, B, ux, y, d });
-	f2 = compute_wedge_x_step({ A, B, lx, y, d });
-	f3 = compute_wedge_y_step({ A, B, x, uy, d });
-	f4 = compute_wedge_y_step({ A, B, x, ly, d });
+        // compute 4 wedges (parallel)
+        allscale::api::core::parallel(
+	        compute_wedge_x_step({ A, B, ux, y, d }),
+            compute_wedge_x_step({ A, B, lx, y, d }),
+            compute_wedge_y_step({ A, B, x, uy, d }),
+            compute_wedge_y_step({ A, B, x, ly, d })
+        ),
 
-	// #pragma omp taskwait
-	f1.get();
-	f2.get();
-	f3.get();
-	f4.get();
+    	// compute reverse pyramid in the center
+	    compute_reverse_step({ A, B, x, y, d }),
 
-	// compute reverse pyramid in the center
-	compute_reverse_step({ A, B, x, y, d }).get();
+	    // compute tip
+	    compute_pyramid_step({ A, B, x, y, d })
 
-	// compute tip
-	compute_pyramid_step({ A, B, x, y, d }).get();
+    ).get();
 
 }
 
@@ -266,35 +262,32 @@ void compute_reverse(const params& p, const Comp_P& compute_pyramid_step, const 
 	int uy = y - h;
 	int ly = y + h;
 
-	// compute tip
-	compute_reverse_step({A, B, x, y, d}).get();
+    allscale::api::core::sequential(
 
-	// compute reverse pyramid in the center
-	compute_pyramid_step({A, B, x, y, d}).get();
+	    // compute tip
+	    compute_reverse_step({A, B, x, y, d}),
 
-	// compute 4 wedges (parallel)
-	auto f1 = compute_wedge_y_step({ A, B, ux, y, d});
-	auto f2 = compute_wedge_y_step({ A, B, lx, y, d});
-	auto f3 = compute_wedge_x_step({ A, B, x, uy, d});
-	auto f4 = compute_wedge_x_step({ A, B, x, ly, d});
+	    // compute reverse pyramid in the center
+	    compute_pyramid_step({A, B, x, y, d}),
 
-	// #pragma omp taskwait
-	f1.get();
-	f2.get();
-	f3.get();
-	f4.get();
 
-	// compute 4 base-pyramids (parallel)
-	f1 = compute_reverse_step({ A, B, lx, ly, d});
-	f2 = compute_reverse_step({ A, B, lx, uy, d});
-	f3 = compute_reverse_step({ A, B, ux, ly, d});
-	f4 = compute_reverse_step({ A, B, ux, uy, d});
+    	// compute 4 wedges (parallel)
+        allscale::api::core::parallel(
+	        compute_wedge_y_step({ A, B, ux, y, d}),
+            compute_wedge_y_step({ A, B, lx, y, d}),
+	        compute_wedge_x_step({ A, B, x, uy, d}),
+	        compute_wedge_x_step({ A, B, x, ly, d})
+        ),
 
-	// #pragma omp taskwait
-	f1.get();
-	f2.get();
-	f3.get();
-	f4.get();
+    	// compute 4 base-pyramids (parallel)
+        allscale::api::core::parallel(
+	        compute_reverse_step({ A, B, lx, ly, d}),
+	        compute_reverse_step({ A, B, lx, uy, d}),
+	        compute_reverse_step({ A, B, ux, ly, d}),
+	        compute_reverse_step({ A, B, ux, uy, d})
+        )
+
+    ).get();
 }
 
 
@@ -345,25 +338,27 @@ void compute_wedge_x(const params& p, const Comp_P& compute_pyramid_step, const 
 	int d = (s - 1) / 2;
 	int h = (d + 1) / 2;
 
-	// compute bottom wedges (parallel)
-	auto f1 = compute_wedge_x_step({A, B, x - h, y, d});
-	auto f2 = compute_wedge_x_step({A, B, x + h, y, d});
-	// #pragma omp taskwait
-	f1.get();
-	f2.get();
+    allscale::api::core::sequential(
 
-	// reverse pyramid
-	compute_reverse_step({A, B, x, y, d}).get();
+    	// compute bottom wedges (parallel)
+        allscale::api::core::parallel(
+            compute_wedge_x_step({A, B, x - h, y, d}),
+            compute_wedge_x_step({A, B, x + h, y, d})
+        ),
 
-	// compute pyramid on top
-	compute_pyramid_step({A, B, x, y, d}).get();
+    	// reverse pyramid
+        compute_reverse_step({A, B, x, y, d}),
 
-	// compute remaining two wedges (parallel)
-	f1 = compute_wedge_x_step({A, B, x, y - h, d});
-	f2 = compute_wedge_x_step({A, B, x, y + h, d});
-	// #pragma omp taskwait
-	f1.get();
-	f2.get();
+    	// compute pyramid on top
+        compute_pyramid_step({A, B, x, y, d}),
+
+    	// compute remaining two wedges (parallel)
+        allscale::api::core::parallel(
+            compute_wedge_x_step({A, B, x, y - h, d}),
+            compute_wedge_x_step({A, B, x, y + h, d})
+        )
+
+    ).get();
 }
 
 void compute_wedge_x_base(const params& p) {
@@ -413,25 +408,28 @@ void compute_wedge_y(const params& p, const Comp_P& compute_pyramid_step, const 
 	int d = (s - 1) / 2;
 	int h = (d + 1) / 2;
 
-	// compute bottom wedges (parallel)
-	auto f1 = compute_wedge_y_step({A, B, x, y - h, d});
-	auto f2 = compute_wedge_y_step({A, B, x, y + h, d});
-	// #pragma omp taskwait
-	f1.get();
-	f2.get();
+    // run sub-tasks
+    allscale::api::core::sequential(
 
-	// reverse pyramid
-	compute_reverse_step({A, B, x, y, d}).get();
+    	// compute bottom wedges (parallel)
+        allscale::api::core::parallel(
+            compute_wedge_y_step({A, B, x, y - h, d}),
+            compute_wedge_y_step({A, B, x, y + h, d})
+        ),
 
-	// compute pyramid on top
-	compute_pyramid_step({A, B, x, y, d}).get();
+    	// reverse pyramid
+    	compute_reverse_step({A, B, x, y, d}),
 
-	// compute remaining two wedges (parallel)
-	f1 = compute_wedge_y_step({A, B, x - h, y, d});
-	f2 = compute_wedge_y_step({A, B, x + h, y, d});
-	// #pragma omp taskwait
-	f1.get();
-	f2.get();
+    	// compute pyramid on top
+    	compute_pyramid_step({A, B, x, y, d}),
+
+        // compute remaining two wedges (parallel)
+        allscale::api::core::parallel(
+            compute_wedge_y_step({A, B, x - h, y, d}),
+            compute_wedge_y_step({A, B, x + h, y, d})
+        )
+
+    ).get();
 }
 
 void compute_wedge_y_base(const params& p) {
@@ -467,29 +465,29 @@ void compute_wedge_y_base(const params& p) {
 
 void jacobi_recursive(const std::launch l, Grid* A, Grid* B, int num_iter) {
 
-	auto jacobi_group = parec::group(
-		parec::fun( // compute_pyramid_step
+	auto jacobi_group = allscale::api::core::group(
+		allscale::api::core::fun( // compute_pyramid_step
 			[](const params& p){ return p.s <= CUT_OFF; },
 			[](const params& p){ compute_pyramid_base(p); },
 			[](const params& p, const auto& compute_pyramid_step, const auto& compute_reverse_step, const auto& compute_wedge_x_step, const auto& compute_wedge_y_step){
 				compute_pyramid(p, compute_pyramid_step, compute_reverse_step, compute_wedge_x_step, compute_wedge_y_step);
 			}
 		),
-		parec::fun( // compute_reverse_step
+		allscale::api::core::fun( // compute_reverse_step
 			[](const params& p){ return p.s <= CUT_OFF; },
 			[](const params& p){ compute_reverse_base(p); },
 			[](const params& p, const auto& compute_pyramid_step, const auto& compute_reverse_step, const auto& compute_wedge_x_step, const auto& compute_wedge_y_step){
 				compute_reverse(p, compute_pyramid_step, compute_reverse_step, compute_wedge_x_step, compute_wedge_y_step);
 			}
 		),
-		parec::fun( // compute_wedge_x_step
+		allscale::api::core::fun( // compute_wedge_x_step
 			[](const params& p){ return p.s <= CUT_OFF; },
 			[](const params& p){ compute_wedge_x_base(p); },
 			[](const params& p, const auto& compute_pyramid_step, const auto& compute_reverse_step, const auto& compute_wedge_x_step, const auto& compute_wedge_y_step){
 				compute_wedge_x(p, compute_pyramid_step, compute_reverse_step, compute_wedge_x_step, compute_wedge_y_step);
 			}
 		),
-		parec::fun( // compute_wedge_y_step
+		allscale::api::core::fun( // compute_wedge_y_step
 			[](const params& p){ return p.s <= CUT_OFF; },
 			[](const params& p){ compute_wedge_y_base(p); },
 			[](const params& p, const auto& compute_pyramid_step, const auto& compute_reverse_step, const auto& compute_wedge_x_step, const auto& compute_wedge_y_step){
@@ -500,13 +498,13 @@ void jacobi_recursive(const std::launch l, Grid* A, Grid* B, int num_iter) {
 
 	// compute full pyramid
 	inncabs::message("\nProcessing main pyramid ...\n");
-	parec::parec<0>(jacobi_group)({ A, B, N / 2, N / 2, N - 2 }).get();
+	allscale::api::core::prec<0>(jacobi_group)({ A, B, N / 2, N / 2, N - 2 }).get();
 	inncabs::message("\nProcessing x wedge ...\n");
-	parec::parec<2>(jacobi_group)({ A, B, N / 2,0, N - 2 }).get();
+	allscale::api::core::prec<2>(jacobi_group)({ A, B, N / 2,0, N - 2 }).get();
 	inncabs::message("\nProcessing y wedge ...\n");
-	parec::parec<3>(jacobi_group)({ A, B, 0, N / 2, N - 2 }).get();
+	allscale::api::core::prec<3>(jacobi_group)({ A, B, 0, N / 2, N - 2 }).get();
 	inncabs::message("\nProcessing reverse pyramid ...\n");
-	parec::parec<1>(jacobi_group)({ A, B, 0, 0, N - 2 }).get();
+	allscale::api::core::prec<1>(jacobi_group)({ A, B, 0, 0, N - 2 }).get();
 }
 
 void jacobi_init(Grid* A) {

@@ -1,6 +1,6 @@
 #include "../include/inncabs.h"
 
-#include "parec/core.h"
+#include "allscale/api/core/prec.h"
 
 typedef long long ll;
 typedef std::vector<int> history;
@@ -23,17 +23,22 @@ ll solutions(const int n, const std::launch l, const int col = 0, history h = hi
 		history h;
 	};
 
-	auto parec_nq = parec::prec(
+	auto parec_nq = allscale::api::core::prec(
 		[](params p) { return p.col == p.n; },
-		[](params p) { return 1; },
+		[](params p) { return 1ll; },
 		[](params p, const auto& queens) {
-			std::vector<decltype(queens({0, 0, history()}))> futures;
+			std::vector<decltype(allscale::api::core::run(queens({0, 0, history()})))> futures;
 			for(int row=0; row<p.n; ++row) {
 				history x = p.h;
 				x.push_back(row);
 				if(valid(p.n, p.col+1, x)) futures.push_back(queens({p.n, p.col+1, x}));
 			}
-			return accumulate(futures.begin(), futures.end(), 0ll, [](ll sum, auto& b) { return sum + b.get(); });
+            ll sum = 0;
+            for(auto& cur : futures) {
+                sum += cur.get();
+            }
+            return sum;
+//			return accumulate(futures.begin(), futures.end(), 0ll, [](ll sum, auto& b) { return sum + b.get(); });
 		}
 	);
 

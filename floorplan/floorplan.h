@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parec/core.h"
+#include "allscale/api/core/prec.h"
 
 #include <vector>
 #include <type_traits>
@@ -287,7 +287,7 @@ int add_cell(const params& p, const O& outer_step, const I& inner_step) {
 	nnl = 0;
 	std::atomic_int_least32_t nnc { 0 };
 
-	std::vector<typename std::result_of<I(inner_params)>::type> futures;
+    std::vector<decltype(allscale::api::core::run(inner_step(*(inner_params*)nullptr)))> futures;
 
 	/* for each possible shape */
 	for (i = 0; i < CELLS[id].n; i++) {
@@ -335,13 +335,13 @@ void compute_floorplan(const std::launch l) {
 	footprint[1] = 0;
 	inncabs::message("Computing floorplan ");
 
-	auto prec_op = parec::prec(
-		parec::fun( // outer
+	auto prec_op = allscale::api::core::prec(
+		allscale::api::core::fun( // outer
 			[](const params& p){ return p.CELLS[p.id].n == 0; },
 			[](const params& p){ return 0; },
 			[](const params& p, const auto& outer_step, const auto& inner_step){ return add_cell(p, outer_step, inner_step); }
 		),
-		parec::fun( // inner
+		allscale::api::core::fun( // inner
 			[](const inner_params& p){ return false; },
 			[](const inner_params& p){ return 0; },
 			[](const inner_params& p, const auto& outer_step, const auto& inner_step){ return add_cell_inner(p, outer_step, inner_step); }

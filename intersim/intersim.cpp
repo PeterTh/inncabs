@@ -6,6 +6,8 @@
 #include <set>
 #include <queue>
 
+#include "allscale/api/user/algorithm/async.h"
+
 #define MAX_PORTS 3
 
 using namespace std;
@@ -531,8 +533,8 @@ void handleCell(const std::launch l, Cell* a) {
 	unlockAll(*aLock, *bLock, *xLock, *yLock, *zLock, *wLock);
 	/*std::cout << "unlocked on " << a << ", " << b << " locks: " <<  *(int*)&a->getLock() << " / " <<  *(int*)&b->getLock() << std::endl;*/  
 
-	std::vector<std::future<void>> futures;
-	for(Cell* c : newTasks) futures.push_back(inncabs::async(l, &handleCell, l, c));
+	std::vector<allscale::api::core::treeture<void>> futures;
+	for(Cell* c : newTasks) futures.push_back(allscale::api::user::algorithm::async([&](){ handleCell(l,c); }));
 	for(auto& f : futures) f.wait();
 }
 
@@ -543,11 +545,11 @@ void compute(const std::launch l, Cell* net) {
 	set<const Cell*> cells = getClosure(net);
 
 	// step 2: get all connected principle ports
-	std::vector<std::future<void>> cuts;
+	std::vector<allscale::api::core::treeture<void>> cuts;
 	for(const Cell* cur : cells) {
 		const Port& port = cur->getPrinciplePort();
 		if(cur < port.cell && isCut(cur, port.cell)) {
-			cuts.push_back(inncabs::async(l, handleCell, l, const_cast<Cell*>(cur)));
+			cuts.push_back(allscale::api::user::algorithm::async([&](){ handleCell(l, const_cast<Cell*>(cur)); }));
 		}
 	}
 

@@ -1,3 +1,3 @@
-[submodule "lib/parec"]
-	path = lib/parec
-	url = https://github.com/HerbertJordan/parec.git
+[submodule "lib/allscale_api"]
+	path = lib/allscale_api
+	url = git@github.com:allscale/allscale_api.git

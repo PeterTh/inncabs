@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parec/ops.h"
+#include "allscale/api/core/prec.h"
 
 /* our real numbers */
 typedef double REAL;
@@ -69,7 +69,7 @@ void compute_w_coefficients(const std::launch l, int n, int a, int b, COMPLEX * 
 		COMPLEX *W;
 	};
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) { return p.b - p.a < 128; },
 		[](const params& p) {
 			double twoPiOverN;
@@ -99,9 +99,10 @@ void compute_w_coefficients(const std::launch l, int n, int a, int b, COMPLEX * 
 			COMPLEX* W = p.W;
 
 			int ab = (a + b) / 2;
-			auto f1 = rec({n,a,ab,W});
-			auto f2 = rec({n,ab+1,b,W});
-			f1.get(); f2.get();
+            return allscale::api::core::parallel(
+                rec({n,a,ab,W}),
+                rec({n,ab+1,b,W})
+            );
 		}
 	);
 	
@@ -159,7 +160,7 @@ void unshuffle(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, i
 		int r, m;
 	};
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) { return p.b - p.a < 16; },
 		[](const params& p) {
 
@@ -195,9 +196,10 @@ void unshuffle(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * out, i
 		},
 		[](const params& p, const auto& rec) {
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({p.a,ab,p.in,p.out,p.r,p.m});
-			auto f2 = rec({ab,p.b,p.in,p.out,p.r,p.m});
-			f1.get(); f2.get();
+            return allscale::api::core::parallel(
+			    rec({p.a,ab,p.in,p.out,p.r,p.m}),
+			    rec({ab,p.b,p.in,p.out,p.r,p.m})
+            );
 		}
 	);
 
@@ -273,7 +275,7 @@ void fft_twiddle_gen(const std::launch l, int i, int i1, COMPLEX * in, COMPLEX *
 	};
 
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) { 
 			return p.i == p.i1 - 1; 
 		},
@@ -282,9 +284,10 @@ void fft_twiddle_gen(const std::launch l, int i, int i1, COMPLEX * in, COMPLEX *
 		},
 		[](const params& p, const auto& rec) {
 			int i2 = (p.i + p.i1) / 2;
-			auto f1 = rec({ p.i, i2, p.in, p.out, p.W, p.nW, p.nWdn, p.r, p.m});
-			auto f2 = rec({ i2, p.i1, p.in, p.out, p.W, p.nW, p.nWdn, p.r, p.m});
-			f1.get(); f2.get();
+            return parallel(
+                rec({ p.i, i2, p.in, p.out, p.W, p.nW, p.nWdn, p.r, p.m}),
+                rec({ i2, p.i1, p.in, p.out, p.W, p.nW, p.nWdn, p.r, p.m})
+            );
 		}
 	);
 
@@ -328,7 +331,7 @@ void fft_twiddle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 	};
 
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) { return (p.b - p.a) < 128; },
 		[](const params& p) {
 
@@ -367,9 +370,10 @@ void fft_twiddle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 		},
 		[](const params& p, const auto& rec) {
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({ p.a, ab, p.in, p.out, p.W, p.nWdn, p.m});
-			auto f2 = rec({ ab, p.b, p.in, p.out, p.W, p.nWdn, p.m});
-			f1.get(); f2.get();
+            return parallel(
+			    rec({ p.a, ab, p.in, p.out, p.W, p.nWdn, p.m}),
+			    rec({ ab, p.b, p.in, p.out, p.W, p.nWdn, p.m})
+            );
 		}
 	);
 
@@ -418,7 +422,7 @@ void fft_unshuffle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 	};
 
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) {
 			return (p.b - p.a) < 128;
 		},
@@ -437,9 +441,10 @@ void fft_unshuffle_2(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 		},
 		[](const params& p, const auto& rec) {
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({ p.a, ab, p.in, p.out, p.m });
-			auto f2 = rec({ ab, p.b, p.in, p.out, p.m });
-			f1.get(); f2.get();
+            return allscale::api::core::parallel(
+                rec({ p.a, ab, p.in, p.out, p.m }),
+			    rec({ ab, p.b, p.in, p.out, p.m })
+            );
 		}
 	);
 
@@ -515,7 +520,7 @@ void fft_twiddle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 	};
 
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) { 
 			return (p.b - p.a) < 128; 
 		},
@@ -590,9 +595,10 @@ void fft_twiddle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 		},
 		[](const params& p, const auto& rec) {
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({ p.a, ab, p.in, p.out, p.W, p.nWdn, p.m});
-			auto f2 = rec({ ab, p.b, p.in, p.out, p.W, p.nWdn, p.m});
-			f1.get(); f2.get();
+            return allscale::api::core::parallel(
+			    rec({ p.a, ab, p.in, p.out, p.W, p.nWdn, p.m}),
+			    rec({ ab, p.b, p.in, p.out, p.W, p.nWdn, p.m})
+            );
 		}
 	);
 
@@ -675,7 +681,7 @@ void fft_unshuffle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 		int m;
 	};
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) { 
 			return (p.b - p.a) < 128; 
 		},
@@ -705,9 +711,10 @@ void fft_unshuffle_4(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 		},
 		[](const params& p, const auto& rec) {
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({ p.a, ab, p.in, p.out, p.m });
-			auto f2 = rec({ ab, p.b, p.in, p.out, p.m });
-			f1.get(); f2.get();
+            return allscale::api::core::parallel(
+                rec({ p.a, ab, p.in, p.out, p.m }),
+			    rec({ ab, p.b, p.in, p.out, p.m })
+			);
 		}
 	);
 
@@ -858,7 +865,7 @@ void fft_twiddle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 	};
 
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) {
 			return (p.b - p.a) < 128; 
 		},
@@ -1018,9 +1025,10 @@ void fft_twiddle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * ou
 		},
 		[](const params& p, const auto& rec) {
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({ p.a, ab, p.in, p.out, p.W, p.nWdn, p.m });
-			auto f2 = rec({ ab, p.b, p.in, p.out, p.W, p.nWdn, p.m });
-			f1.get(); f2.get();
+            return allscale::api::core::parallel(
+			    rec({ p.a, ab, p.in, p.out, p.W, p.nWdn, p.m }),
+			    rec({ ab, p.b, p.in, p.out, p.W, p.nWdn, p.m })
+            );
 		}
 	);
 
@@ -1188,7 +1196,7 @@ void fft_unshuffle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 	};
 
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) {
 			return (p.b - p.a) < 128;	
 		},
@@ -1226,9 +1234,10 @@ void fft_unshuffle_8(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * 
 		},
 		[](const params& p, const auto& rec) {
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({ p.a, ab, p.in, p.out, p.m });
-			auto f2 = rec({ ab, p.b, p.in, p.out, p.m });
-			f1.get(); f2.get();
+            return allscale::api::core::parallel(
+			    rec({ p.a, ab, p.in, p.out, p.m }),
+			    rec({ ab, p.b, p.in, p.out, p.m })
+            );
 		}
 	);
 
@@ -1556,7 +1565,7 @@ void fft_twiddle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * o
 	};
 
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) { 
 			return (p.b - p.a) < 128; },
 		[](const params& p) {
@@ -1915,9 +1924,10 @@ void fft_twiddle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * o
 		},
 		[](const params& p, const auto& rec) {
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({ p.a, ab, p.in, p.out, p.W, p.nWdn, p.m });
-			auto f2 = rec({ ab, p.b, p.in, p.out, p.W, p.nWdn, p.m });
-			f1.get(); f2.get();
+            return allscale::api::core::parallel(
+			    rec({ p.a, ab, p.in, p.out, p.W, p.nWdn, p.m }),
+			    rec({ ab, p.b, p.in, p.out, p.W, p.nWdn, p.m })
+            );
 		}
 	);
 
@@ -2284,7 +2294,7 @@ void fft_unshuffle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX *
 	};
 
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) {
 			return (p.b - p.a) < 128;
 		},
@@ -2338,9 +2348,10 @@ void fft_unshuffle_16(const std::launch l, int a, int b, COMPLEX * in, COMPLEX *
 		},
 		[](const params& p, const auto& rec) {
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({ p.a, ab, p.in, p.out, p.m });
-			auto f2 = rec({ ab, p.b, p.in, p.out, p.m });
-			f1.get(); f2.get();
+            return allscale::api::core::parallel(
+			    rec({ p.a, ab, p.in, p.out, p.m }),
+			    rec({ ab, p.b, p.in, p.out, p.m })
+            );
 		}
 	);
 
@@ -3083,7 +3094,7 @@ void fft_twiddle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * o
 		int m;
 	};
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) { 
 			return (p.b - p.a) < 128;
 		},
@@ -3907,9 +3918,10 @@ void fft_twiddle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX * o
 		},
 		[](const params& p, const auto& rec) { 
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({ p.a, ab, p.in, p.out, p.W, p.nWdn, p.m });
-			auto f2 = rec({ ab, p.b, p.in, p.out, p.W, p.nWdn, p.m });
-			f1.get(); f2.get();			
+            return allscale::api::core::parallel(
+			    rec({ p.a, ab, p.in, p.out, p.W, p.nWdn, p.m }),
+			    rec({ ab, p.b, p.in, p.out, p.W, p.nWdn, p.m })
+            );
 		}
 	);	
 
@@ -4739,7 +4751,7 @@ void fft_unshuffle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX *
 		int m;
 	};
 
-	auto fun = parec::prec(
+	auto fun = allscale::api::core::prec(
 		[](const params& p) {
 			return (p.b - p.a) < 128;
 		},
@@ -4826,9 +4838,10 @@ void fft_unshuffle_32(const std::launch l, int a, int b, COMPLEX * in, COMPLEX *
 		},
 		[](const params& p, const auto& rec) {
 			int ab = (p.a + p.b) / 2;
-			auto f1 = rec({ p.a, ab, p.in, p.out, p.m });
-			auto f2 = rec({ ab, p.b, p.in, p.out, p.m });
-			f1.get(); f2.get();
+            return allscale::api::core::parallel(
+			    rec({ p.a, ab, p.in, p.out, p.m }),
+			    rec({ ab, p.b, p.in, p.out, p.m })
+            );
 		}
 	);
 

@@ -32,7 +32,7 @@
 
 #include <mutex>
 
-#include "parec/core.h"
+#include "allscale/api/core/prec.h"
 
 /* random defines */
 #define IA 16807
@@ -468,7 +468,7 @@ void sim_village_par_internal(struct Village *village, const T& rec_call)
 {
 	struct Village *vlist;
 
-	std::vector<decltype(rec_call(nullptr))> futures;
+	std::vector<decltype(allscale::api::core::run(rec_call(nullptr)))> futures;
 	/* Traverse village hierarchy (lower level first)*/
 	vlist = village->forward;
 	while(vlist) {
@@ -499,7 +499,7 @@ void sim_village_par_internal(struct Village *village, const T& rec_call)
 }
 
 void sim_village_par(const std::launch l, struct Village *village) {
-	parec::prec(
+	allscale::api::core::prec(
 		[](struct Village* village) { return !village; },
 		[](struct Village* village) { return; },
 		[](struct Village* village, const auto& rec_call) {

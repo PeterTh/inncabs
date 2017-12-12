@@ -1,18 +1,17 @@
 #include "../include/inncabs.h"
 
-#include "parec/core.h"
+#include "allscale/api/core/prec.h"
+#include "allscale/api/user/arithmetic.h"
 
 typedef long long ll;
 
 ll fib(ll n, const std::launch l) {
 
-	auto parec_fib = parec::prec(
+	auto parec_fib = allscale::api::core::prec(
 		[](ll n) { return n<2; },
 		[](ll n) { return n; },
 		[](ll n, const auto& fib) {
-			auto x = fib(n-1);
-			auto y = fib(n-2);
-			return x.get() + y.get();
+            return allscale::api::user::add(fib(n-1),fib(n-2));
 		}
 	);
 

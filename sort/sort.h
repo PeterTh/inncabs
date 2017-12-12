@@ -38,7 +38,7 @@
 
 #include "../include/inncabs.h"
 
-#include "parec/core.h"
+#include "allscale/api/core/prec.h"
 
 #include <cstring>
 
@@ -252,11 +252,11 @@ void cilkmerge_par_step(const merge_params& p, const MergeFun& merge) {
 	* the appropriate location
 	*/
 	*(lowdest + lowsize + 1) = *split1;
-	auto f1 = merge({low1, split1 - 1, low2, split2, lowdest});
-	auto f2 = merge({split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2});
-	f1.get();
-	f2.get();
-	return;
+
+    allscale::api::core::parallel(
+    	merge({low1, split1 - 1, low2, split2, lowdest}),
+	    merge({split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2})
+    ).get();
 }
 
 struct sort_params {
@@ -296,28 +296,27 @@ void cilksort_par_step(const sort_params& p, const SortFun& sort, const MergeFun
 	D = C + quarter;
 	tmpD = tmpC + quarter;
 
-	auto f1 = sort({A, tmpA, quarter});
-	auto f2 = sort({B, tmpB, quarter});
-	auto f3 = sort({C, tmpC, quarter});
-	auto f4 = sort({D, tmpD, size - 3 * quarter});
-	f1.get();
-	f2.get();
-	f3.get();
-	f4.get();
+    allscale::api::core::sequential(
+        allscale::api::core::parallel(
+            sort({A, tmpA, quarter}),
+            sort({B, tmpB, quarter}),
+            sort({C, tmpC, quarter}),
+            sort({D, tmpD, size - 3 * quarter})
+        ),
+        allscale::api::core::parallel(
+            merge({A, A + quarter - 1, B, B + quarter - 1, tmpA}),
+            merge({C, C + quarter - 1, D, low + size - 1, tmpC})
+        ),
+    	merge({tmpA, tmpC - 1, tmpC, tmpA + size - 1, A})
+    ).get();
 
-	auto f5 = merge({A, A + quarter - 1, B, B + quarter - 1, tmpA});
-	auto f6 = merge({C, C + quarter - 1, D, low + size - 1, tmpC});
-	f5.get();
-	f6.get();
-
-	merge({tmpA, tmpC - 1, tmpC, tmpA + size - 1, A}).get();
 }
 
 void cilksort_par(const std::launch l, ELM *low, ELM *tmp, long size) {
 
 
-	auto rec_qsort = parec::prec(
-		parec::fun(													// quick sort
+	auto rec_qsort = allscale::api::core::prec(
+		allscale::api::core::fun(													// quick sort
 			[](const sort_params& p) {
 				return p.size < arg_cutoff_2;
 			},
@@ -328,7 +327,7 @@ void cilksort_par(const std::launch l, ELM *low, ELM *tmp, long size) {
 				cilksort_par_step(p,sort,merge);
 			}
 		),
-		parec::fun(													// merge step
+		allscale::api::core::fun(													// merge step
 			[](const merge_params& p) {
 
 				ELM* low1 = p.low1;

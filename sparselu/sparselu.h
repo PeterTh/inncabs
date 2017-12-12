@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parec/async.h"
+#include "allscale/api/user/algorithm/async.h"
 
 #define EPSILON 1.0E-6
 
@@ -183,13 +183,13 @@ void sparselu_par_call(const std::launch l, float **BENCH) {
 	for(int kk=0; kk<arg_size_1; kk++) {
 		lu0(BENCH[kk*arg_size_1+kk]);
 		for(int jj=kk+1; jj<arg_size_1; jj++) {
-			std::vector<parec::utils::runtime::Future<void>> futures;
+			std::vector<allscale::api::core::treeture<void>> futures;
 			if(BENCH[kk*arg_size_1+jj] != NULL) {
-				futures.push_back(parec::async([=]{ fwd(BENCH[kk*arg_size_1+kk], BENCH[kk*arg_size_1+jj]); }));
+				futures.push_back(allscale::api::user::algorithm::async([=]{ fwd(BENCH[kk*arg_size_1+kk], BENCH[kk*arg_size_1+jj]); }));
 			}
 			for(int ii=kk+1; ii<arg_size_1; ii++) {
 				if(BENCH[ii*arg_size_1+kk] != NULL)	{
-					futures.push_back(parec::async([=]{ bdiv(BENCH[kk*arg_size_1+kk], BENCH[ii*arg_size_1+kk]); }));
+					futures.push_back(allscale::api::user::algorithm::async([=]{ bdiv(BENCH[kk*arg_size_1+kk], BENCH[ii*arg_size_1+kk]); }));
 				}
 			}
 			for(auto& f : futures) {
@@ -201,7 +201,7 @@ void sparselu_par_call(const std::launch l, float **BENCH) {
 				if(BENCH[ii*arg_size_1+kk] != NULL) {
 					for(jj=kk+1; jj<arg_size_1; jj++) {
 						if(BENCH[kk*arg_size_1+jj] != NULL)	{
-							futures.push_back(parec::async([=]() {
+							futures.push_back(allscale::api::user::algorithm::async([=]() {
 								if(BENCH[ii*arg_size_1+jj]==NULL) BENCH[ii*arg_size_1+jj] = allocate_clean_block();
 								bmod(BENCH[ii*arg_size_1+kk], BENCH[kk*arg_size_1+jj], BENCH[ii*arg_size_1+jj]);
 							} ) );

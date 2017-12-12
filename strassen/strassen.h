@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parec/core.h"
+#include "allscale/api/core/prec.h"
 
 /**********************************************************************************************/
 /*  This program is part of the Barcelona OpenMP Tasks Suite                                  */
@@ -760,7 +760,7 @@ void OptimizedStrassenMultiply_parec(const params& p, const T& rec_strassen) {
 		MatrixOffsetB += RowIncrementB;
 	} /* end column loop */
 
-	std::vector<decltype(rec_strassen(p))> futures;
+	std::vector<decltype(allscale::api::core::run(rec_strassen(p)))> futures;
 
 	/* M2 = A11 x B11 */
 	futures.push_back(rec_strassen({M2, A11, B11, QuadrantSize, QuadrantSize, RowWidthA, RowWidthB, Depth+1}));
@@ -851,7 +851,7 @@ void OptimizedStrassenMultiply_parec(const params& p, const T& rec_strassen) {
 
 void OptimizedStrassenMultiply_par(const std::launch l, REAL *C, REAL *A, REAL *B, unsigned MatrixSize, unsigned RowWidthC, unsigned RowWidthA, unsigned RowWidthB, int Depth) {
 
-	auto strassen = parec::prec(
+	auto strassen = allscale::api::core::prec(
 		[](const params& p) {
 			return p.MatrixSize <= arg_cutoff_value;
 		},

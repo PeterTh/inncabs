@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parec/core.h"
+#include "allscale/api/core/prec.h"
 
 /*
  Adapted from the Insieme compiler "qap" test case.
@@ -79,7 +79,7 @@ int solve_rec_step(const params& p, const T& rec_call) {
 		return best_known;
 	}
 
-	std::vector<decltype(rec_call(p))> futures;
+	std::vector<decltype(allscale::api::core::run(rec_call(p)))> futures;
 
 	solution tmp[problem->size];
 
@@ -129,7 +129,7 @@ int solve(const std::launch l, problem* problem) {
 	solution* map = empty();
 	std::atomic<int> best{ 1 << 30 };
 
-	auto rec_solver = parec::prec(
+	auto rec_solver = allscale::api::core::prec(
 		[](const params& p){
 			return p.plant >= p.problem_->size;
 		},
